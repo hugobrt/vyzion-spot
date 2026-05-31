@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Now Playing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:transparent; overflow:hidden; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+
+#card {
+  position:fixed; bottom:28px; left:28px; width:360px;
+  background:rgba(8,8,8,0.82);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:18px; padding:16px 18px 14px;
+  display:flex; flex-direction:column; gap:12px;
+  transform:translateY(calc(100% + 40px)); opacity:0;
+  transition:
+    transform 0.65s cubic-bezier(0.34,1.4,0.64,1),
+    opacity 0.45s ease,
+    width 0.5s cubic-bezier(0.4,0,0.2,1),
+    padding 0.5s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+#card.show { transform:translateY(0); opacity:1; }
+
+#card.compact { width:280px; padding:12px 14px; gap:10px; }
+#card.compact .viz-wrap   { display:none; }
+#card.compact .bottom-row { display:none; }
+#card.compact .track-artist { margin-bottom:0; }
+
+.track-row { display:flex; align-items:center; gap:14px; }
+.art-wrap { position:relative; flex-shrink:0; width:68px; height:68px; }
+#album-art {
+  width:100%; height:100%; border-radius:10px; object-fit:cover;
+  display:block; background:#1a1a1a;
+  transition:transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease, filter 0.4s ease;
+}
+.art-glow {
+  position:absolute; inset:-6px; border-radius:18px; z-index:-1;
+  opacity:0; filter:blur(16px);
+  background:var(--accent,rgba(30,185,84,0.5));
+  transition:background 1.2s ease, opacity 0.8s ease;
+}
+#card.show .art-glow { opacity:0.5; }
+.info { flex:1; min-width:0; }
+.track-title {
+  font-size:15px; font-weight:700; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  line-height:1.3; margin-bottom:4px;
+  transition:opacity 0.28s ease, transform 0.28s cubic-bezier(0.16,1,0.3,1);
+}
+.track-artist {
+  font-size:13px; color:rgba(255,255,255,0.5);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-bottom:8px;
+  transition:opacity 0.28s ease, transform 0.28s cubic-bezier(0.16,1,0.3,1);
+}
+.info.changing .track-title,
+.info.changing .track-artist { opacity:0; transform:translateY(-6px); }
+.bottom-row { display:flex; align-items:center; justify-content:space-between; }
+.time-label { font-size:11px; color:rgba(255,255,255,0.3); font-variant-numeric:tabular-nums; }
+.sp-badge { display:flex; align-items:center; gap:5px; opacity:0.45; }
+.sp-badge span { font-size:11px; font-weight:600; color:#fff; letter-spacing:0.03em; }
+.viz-wrap { position:relative; height:46px; width:100%; }
+#viz { width:100%; height:100%; display:block; }
+#card.paused #album-art    { filter:brightness(0.65) saturate(0.5); }
+#card.paused .track-title  { opacity:0.5; }
+#card.paused .track-artist { opacity:0.3; }
+</style>
+</head>
+<body>
+<div id="card">
+  <div class="track-row">
+    <div class="art-wrap">
+      <div class="art-glow" id="glow"></div>
+      <img id="album-art" src="" alt="" crossorigin="anonymous">
+    </div>
+    <div class="info" id="info">
+      <div class="track-title"  id="title">—</div>
+      <div class="track-artist" id="artist">—</div>
+      <div class="bottom-row">
+        <span class="time-label" id="time">0:00 / 0:00</span>
+        <div class="sp-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#1DB954" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          <span>Spotify</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="viz-wrap"><canvas id="viz"></canvas></div>
+</div>
+
+<script>
+const card   = document.getElementById('card');
+const artImg = document.getElementById('album-art');
+const glow   = document.getElementById('glow');
+const titleEl= document.getElementById('title');
+const artEl  = document.getElementById('artist');
+const timeEl = document.getElementById('time');
+const infoEl = document.getElementById('info');
+const canvas = document.getElementById('viz');
+const ctx    = canvas.getContext('2d');
+
+let accent      = {r:30,g:185,b:84};
+let track       = null;
+let isPlaying   = false;
+let progress    = 0;
+let duration    = 1;
+let progRef     = 0;
+let hiddenByPause = false;
+const BARS      = 64;
+let bH          = new Float32Array(BARS);
+let tH          = new Float32Array(BARS);
+let lastTs      = 0;
+let pauseTimer1 = null;
+let pauseTimer2 = null;
+
+function clearPauseTimers() {
+  clearTimeout(pauseTimer1);
+  clearTimeout(pauseTimer2);
+  pauseTimer1 = pauseTimer2 = null;
+}
+
+function startPauseTimers() {
+  clearPauseTimers();
+  pauseTimer1 = setTimeout(() => {
+    card.classList.add('compact');
+  }, 5000);
+  pauseTimer2 = setTimeout(() => {
+    card.classList.remove('show','paused','compact');
+    hiddenByPause = true;
+  }, 10000);
+}
+
+function resumeFromPause() {
+  clearPauseTimers();
+  hiddenByPause = false;
+  card.classList.remove('compact','paused');
+  if (!card.classList.contains('show')) {
+    setTimeout(() => card.classList.add('show'), 50);
+  }
+}
+
+function resize() { canvas.width=canvas.offsetWidth*devicePixelRatio; canvas.height=canvas.offsetHeight*devicePixelRatio; }
+resize();
+new ResizeObserver(resize).observe(canvas);
+
+function extractAccent(img) {
+  try {
+    const c=document.createElement('canvas'); c.width=c.height=48;
+    const cx=c.getContext('2d'); cx.drawImage(img,0,0,48,48);
+    const d=cx.getImageData(0,0,48,48).data;
+    let bestSat=0,br=30,bg=185,bb=84;
+    for(let i=0;i<d.length;i+=8){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      const M=Math.max(r,g,b),m=Math.min(r,g,b);
+      const sat=M===0?0:(M-m)/M,bri=M/255;
+      if(sat>bestSat&&bri>0.18&&bri<0.96){bestSat=sat;br=r;bg=g;bb=b;}
+    }
+    accent={r:br,g:bg,b:bb};
+    const css=`rgba(${br},${bg},${bb},0.55)`;
+    glow.style.background=css; card.style.setProperty('--accent',css);
+  }catch(e){}
+}
+artImg.addEventListener('load',()=>extractAccent(artImg));
+
+function updateTargets(ts) {
+  const t=ts/1000;
+  for(let i=0;i<BARS;i++){
+    const p=i/BARS;
+    if(!isPlaying){ tH[i]=0.04+0.03*Math.sin(t*0.6+p*Math.PI*3); }
+    else {
+      const h=0.30*Math.abs(Math.sin(t*2.3+p*Math.PI*5))
+             +0.25*Math.abs(Math.sin(t*3.8+p*Math.PI*8))
+             +0.18*Math.abs(Math.sin(t*1.4+p*Math.PI*3))
+             +0.10*Math.abs(Math.sin(t*6.1+p*Math.PI*12))
+             +0.04*(Math.random()*0.5+0.25);
+      tH[i]=Math.max(0.04,Math.min(1,h));
+    }
+  }
+}
+
+function fmt(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`;}
+
+function draw(ts) {
+  requestAnimationFrame(draw);
+  const dt=Math.min((ts-lastTs)/1000,0.05); lastTs=ts;
+  if(isPlaying&&progRef>0){ progress=Math.min(duration,progress+(ts-progRef)); progRef=ts; }
+  timeEl.textContent=`${fmt(progress)} / ${fmt(duration)}`;
+  updateTargets(ts);
+  const k=isPlaying?Math.min(1,dt*14):Math.min(1,dt*5);
+  for(let i=0;i<BARS;i++) bH[i]+=(tH[i]-bH[i])*k;
+
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const prog=duration>0?progress/duration:0, pX=prog*W, {r,g,b}=accent;
+
+  function buildWave(){
+    const step=W/(BARS-1);
+    ctx.beginPath(); ctx.moveTo(0,H/2);
+    for(let i=0;i<BARS;i++){
+      const px=i*step, py=H/2-bH[i]*H*0.42;
+      if(i===0){ctx.lineTo(px,py);continue;}
+      ctx.quadraticCurveTo((i-0.5)*step,H/2-bH[i-1]*H*0.42,px,py);
+    }
+    ctx.lineTo(W,H/2);
+    for(let i=BARS-1;i>=0;i--){
+      const px=i*step, py=H/2+bH[i]*H*0.42;
+      if(i===BARS-1){ctx.lineTo(px,py);continue;}
+      ctx.quadraticCurveTo((i+0.5)*step,H/2+bH[i+1]*H*0.42,px,py);
+    }
+    ctx.closePath();
+  }
+
+  ctx.shadowBlur=0; buildWave(); ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fill();
+  if(pX>1){
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,pX,H); ctx.clip();
+    buildWave();
+    ctx.fillStyle=`rgba(${r},${g},${b},0.85)`;
+    ctx.shadowColor=`rgba(${r},${g},${b},0.5)`;
+    ctx.shadowBlur=12*devicePixelRatio; ctx.fill(); ctx.shadowBlur=0;
+    ctx.restore();
+  }
+  if(prog>0.005&&prog<0.998){
+    ctx.beginPath(); ctx.arc(pX,H/2,5.5*devicePixelRatio,0,Math.PI*2);
+    ctx.fillStyle='#fff';
+    ctx.shadowColor='rgba(255,255,255,0.7)'; ctx.shadowBlur=10*devicePixelRatio;
+    ctx.fill(); ctx.shadowBlur=0;
+  }
+}
+requestAnimationFrame(ts=>{lastTs=ts;requestAnimationFrame(draw);});
+
+function applyTrack(t, isNew=false) {
+  if (!t) {
+    clearPauseTimers();
+    hiddenByPause = false;
+    card.classList.remove('show','paused','compact');
+    track=null; isPlaying=false; return;
+  }
+
+  const wasPlaying = isPlaying;
+  isPlaying = t.isPlaying;
+  progress  = t.progress;
+  duration  = t.duration||1;
+  progRef   = performance.now();
+
+  if (!wasPlaying && isPlaying) resumeFromPause();
+  if (wasPlaying && !isPlaying) { card.classList.add('paused'); startPauseTimers(); }
+  if (isPlaying) { card.classList.remove('paused','compact'); clearPauseTimers(); }
+
+  if (isNew || !track || track.id !== t.id) {
+    track=t;
+    artImg.style.transform='scale(0.82)'; artImg.style.opacity='0';
+    setTimeout(()=>{ artImg.src=t.albumArt; artImg.style.transform='scale(1)'; artImg.style.opacity='1'; },300);
+    infoEl.classList.add('changing');
+    setTimeout(()=>{ titleEl.textContent=t.title; artEl.textContent=t.artist; infoEl.classList.remove('changing'); },280);
+  } else { track=t; }
+
+  if (!hiddenByPause && !card.classList.contains('show')) {
+    setTimeout(()=>card.classList.add('show'),50);
+  }
+}
+
+let ws;
+function connect(){
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws=new WebSocket(`${protocol}//${location.host}`);
+  ws.onclose=()=>setTimeout(connect,3000);
+  ws.onerror=()=>{};
+  ws.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    if(['init','newtrack','progress','track'].includes(m.type)) applyTrack(m.track,m.type==='newtrack');
+  };
+}
+connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Now Playing — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a; --surface:#111; --s2:#161616;
+  --border:rgba(255,255,255,0.08); --text:#e8e8e8;
+  --muted:rgba(255,255,255,0.45); --faint:rgba(255,255,255,0.2);
+  --green:#1DB954; --green-h:#1ed760; --radius:12px;
+  --trans:180ms cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+.page{max-width:600px;margin:0 auto;padding:40px 20px 60px;}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:36px;}
+.sp-icon{width:40px;height:40px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header h1{font-size:20px;font-weight:700;color:#fff;}
+.header p{font-size:13px;color:var(--muted);margin-top:2px;}
+.overlay-link{margin-left:auto;font-size:12px;color:var(--green);text-decoration:none;display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid rgba(29,185,84,0.3);border-radius:20px;transition:background var(--trans),border-color var(--trans);white-space:nowrap;flex-shrink:0;}
+.overlay-link:hover{background:rgba(29,185,84,0.08);border-color:rgba(29,185,84,0.6);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;}
+.card-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.step-num{width:20px;height:20px;background:rgba(29,185,84,0.15);color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+.field input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'Inter',monospace;outline:none;transition:border-color var(--trans),box-shadow var(--trans);}
+.field input:focus{border-color:rgba(29,185,84,0.5);box-shadow:0 0 0 3px rgba(29,185,84,0.1);}
+.field input::placeholder{color:var(--faint);}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:background var(--trans),transform var(--trans),opacity var(--trans);}
+.btn:active{transform:scale(0.97);}
+.btn-green{background:var(--green);color:#000;}
+.btn-green:hover{background:var(--green-h);}
+.btn-green:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{background:rgba(255,255,255,0.05);}
+.status-row{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--s2);border-radius:10px;margin-bottom:16px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex-shrink:0;transition:background 0.4s ease;}
+.dot.ok{background:var(--green);box-shadow:0 0 0 3px rgba(29,185,84,0.2);}
+.dot.warn{background:#f59e0b;}
+.dot.err{background:#ef4444;}
+.status-text{font-size:13px;color:var(--text);}
+.status-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+#np-card{display:none;align-items:center;gap:14px;padding:14px 16px;background:var(--s2);border-radius:10px;border:1px solid rgba(29,185,84,0.15);}
+#np-card.show{display:flex;}
+#np-art{width:48px;height:48px;border-radius:6px;object-fit:cover;background:#222;flex-shrink:0;}
+#np-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:3px;}
+#np-artist{font-size:12px;color:var(--muted);}
+.np-playing{margin-left:auto;display:flex;align-items:center;gap:3px;}
+.np-playing span{display:inline-block;width:3px;background:var(--green);border-radius:2px;animation:eq 0.9s ease-in-out infinite alternate;}
+.np-playing span:nth-child(1){height:8px;animation-delay:0s;}
+.np-playing span:nth-child(2){height:14px;animation-delay:0.15s;}
+.np-playing span:nth-child(3){height:10px;animation-delay:0.3s;}
+@keyframes eq{to{height:4px;opacity:0.4;}}
+.np-paused-icon{margin-left:auto;color:var(--muted);font-size:18px;}
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+.alert.show{display:block;}
+.alert.success{background:rgba(29,185,84,0.1);color:#1DB954;border:1px solid rgba(29,185,84,0.2);}
+.alert.error{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+.instr{font-size:13px;color:var(--muted);line-height:1.7;}
+.instr ol{padding-left:18px;}
+.instr li{margin-bottom:4px;}
+.instr code{background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:12px;font-family:monospace;}
+#toast{position:fixed;bottom:24px;right:24px;background:#222;border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity 0.3s ease,transform 0.3s cubic-bezier(0.16,1,0.3,1);z-index:999;}
+#toast.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="sp-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+    </div>
+    <div>
+      <h1>Now Playing Overlay</h1>
+      <p>Connecte Spotify pour afficher la musique en cours dans OBS</p>
+    </div>
+    <a class="overlay-link" href="/overlay" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+      Overlay OBS
+    </a>
+  </div>
+
+  <div class="alert success" id="alert-success">✓ Spotify connecté avec succès !</div>
+  <div class="alert error"   id="alert-error">✗ Erreur lors de la connexion. Vérifie tes identifiants.</div>
+
+  <div class="card">
+    <div class="card-title">Statut</div>
+    <div class="status-row">
+      <div class="dot" id="status-dot"></div>
+      <div>
+        <div class="status-text" id="status-text">Connexion…</div>
+        <div class="status-sub"  id="status-sub"></div>
+      </div>
+    </div>
+    <div id="np-card">
+      <img id="np-art" src="" alt="">
+      <div>
+        <div id="np-title">—</div>
+        <div id="np-artist">—</div>
+      </div>
+      <div class="np-playing" id="np-playing"><span></span><span></span><span></span></div>
+      <div class="np-paused-icon" id="np-paused" style="display:none">⏸</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="step-num">1</div>Identifiants Spotify Developer</div>
+    <div class="instr" style="margin-bottom:16px">
+      <ol>
+        <li>Va sur <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--green)">developer.spotify.com/dashboard</a></li>
+        <li>Dans ton app → Settings → ajoute l'URL de ton site Render + <code>/callback</code> en Redirect URI</li>
+        <li>Copie le <strong>Client ID</strong> et le <strong>Client Secret</strong> ci-dessous</li>
+      </ol>
+    </div>
+    <div class="field">
+      <label>Client ID</label>
+      <input type="text" id="clientId" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Client Secret</label>
+      <input type="password" id="clientSecret" placeholder="••••••••••••••••••••••••••••••••">
+    </div>
+    <button class="btn btn-ghost" onclick="saveCreds()">Enregistrer les identifiants</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="step-num">2</div>Connexion Spotify</div>
+    <p class="instr" style="margin-bottom:16px">Clique ci-dessous pour autoriser l'accès à ton compte Spotify.</p>
+    <button class="btn btn-green" id="auth-btn" onclick="connectSpotify()">
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="black" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+      Se connecter avec Spotify
+    </button>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const params=new URLSearchParams(location.search);
+if(params.get('success')){document.getElementById('alert-success').classList.add('show');history.replaceState({},'','/dashboard');}
+if(params.get('error')){document.getElementById('alert-error').classList.add('show');history.replaceState({},'','/dashboard');}
+function saveCreds(){const clientId=document.getElementById('clientId').value.trim(),clientSecret=document.getElementById('clientSecret').value.trim();if(!clientId||!clientSecret){toast('⚠️ Remplis les deux champs');return;}fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,clientSecret})}).then(()=>toast('✓ Identifiants enregistrés !'));}
+function connectSpotify(){const btn=document.getElementById('auth-btn');btn.disabled=true;btn.textContent='Redirection…';location.href='/auth';}
+function updateStatus(s){const dot=document.getElementById('status-dot'),text=document.getElementById('status-text'),sub=document.getElementById('status-sub'),np=document.getElementById('np-card');if(!s.hasCredentials){dot.className='dot warn';text.textContent='Identifiants manquants';sub.textContent='Remplis le Client ID et Client Secret';np.classList.remove('show');return;}if(!s.hasToken){dot.className='dot warn';text.textContent='Non connecté à Spotify';sub.textContent='Clique "Se connecter avec Spotify" ci-dessous';np.classList.remove('show');return;}if(!s.connected){dot.className='dot err';text.textContent='Erreur de connexion';sub.textContent='Vérifie que le serveur tourne';np.classList.remove('show');return;}dot.className='dot ok';text.textContent='Connecté à Spotify';sub.textContent=s.track?(s.track.isPlaying?'▶ En cours de lecture':'⏸ En pause'):'Aucune musique en cours';if(s.track){np.classList.add('show');document.getElementById('np-art').src=s.track.albumArt;document.getElementById('np-title').textContent=s.track.title;document.getElementById('np-artist').textContent=s.track.artist;document.getElementById('np-playing').style.display=s.track.isPlaying?'flex':'none';document.getElementById('np-paused').style.display=s.track.isPlaying?'none':'block';}else{np.classList.remove('show');}}
+function poll(){fetch('/api/status').then(r=>r.json()).then(updateStatus).catch(()=>{document.getElementById('status-dot').className='dot err';document.getElementById('status-text').textContent='Serveur inaccessible';document.getElementById('status-sub').textContent='Lance le serveur JS';});}
+poll();setInterval(poll,5000);
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+</script>
+</body>
+</html>

@@ -6,8 +6,8 @@ const urlMod   = require('url');
 const qs       = require('querystring');
 const { WebSocketServer } = require('ws');
 
-const PORT         = 3001;
-const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;
+// Choix dynamique du port pour Render (ou 3001 en local)
+const PORT = process.env.PORT || 3001;
 const SCOPES       = 'user-read-currently-playing user-read-playback-state';
 const CONFIG_FILE  = path.join(__dirname, 'spotify-config.json');
 
@@ -46,7 +46,7 @@ async function doRefresh() {
   if (!cfg.refreshToken||!cfg.clientId||!cfg.clientSecret) return false;
   const creds = Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString('base64');
   try {
-    const r = await httpsPost('accounts.spotify.com','/api/token',
+    const r = await httpsPost('api.spotify.com','/api/token',
       { grant_type:'refresh_token', refresh_token:cfg.refreshToken },
       { Authorization:`Basic ${creds}` });
     if (r.access_token) {
@@ -102,7 +102,13 @@ const server = http.createServer(async (req,res) => {
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
   if (req.method==='OPTIONS') { res.writeHead(204); return res.end(); }
 
-  const parsed   = new urlMod.URL(req.url,`http://localhost:${PORT}`);
+  // Détection dynamique de l'hôte pour s'adapter aussi bien à Localhost qu'à l'URL Render
+  const protocol = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const host = req.headers.host;
+  const baseUri = `${protocol}://${host}`;
+  const REDIRECT_URI = `${baseUri}/callback`;
+
+  const parsed   = new urlMod.URL(req.url, baseUri);
   const pathname = parsed.pathname;
 
   if (pathname==='/auth') {
@@ -168,10 +174,18 @@ wss.on('connection', ws => {
   ws.send(JSON.stringify({ type:'init', track:currentTrack, connected:isConnected }));
 });
 
-server.listen(PORT, ()=>{
-  console.log(`\n🎵 Now Playing Overlay`);
-  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(` Dashboard : http://localhost:${PORT}`);
-  console.log(` Overlay   : http://localhost:${PORT}/overlay`);
-  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+// Logs d'initialisation intelligents et propres
+server.listen(PORT, () => {
+    console.log("\n ==========================================");
+    console.log("  🎵 Now Playing Overlay — Serveur Actif");
+    console.log(" ==========================================");
+    if (process.env.PORT) {
+        console.log(`  Statut    : En ligne (Production Render)`);
+        console.log(`  Port web  : ${PORT}`);
+    } else {
+        console.log(`  Statut    : Localhost (Développement)`);
+        console.log(`  Dashboard : http://localhost:${PORT}`);
+        console.log(`  Overlay   : http://localhost:${PORT}/overlay`);
+    }
+    console.log(" ==========================================\n");
 });

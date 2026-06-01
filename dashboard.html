@@ -868,7 +868,7 @@ function saveState() {
   // Reset fin-btn car on repart sur pré-départ
   const finBtn = document.getElementById('fin-btn');
   if (finBtn) { finBtn.style.opacity = '0.35'; finBtn.style.pointerEvents = 'none'; }
-  fetch('/api/state'), {
+  fetch('http://localhost:3000/api/state', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(s)
@@ -882,7 +882,7 @@ function lancerDepart() {
   const s = collectState();
   s.departed = true;
   state.departed = true;
-  fetch('http://localhost:3000/api/state', {
+  fetch('/api/state', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(s)
@@ -896,20 +896,20 @@ function lancerDepart() {
 }
 
 function finService() {
-  fetch('http://localhost:3000/api/fin').then(() => showToast('🏁 Fin de service !'));
+  fetch('/api/fin').then(() => showToast('🏁 Fin de service !'));
 }
 
 function togglePax() {
-  fetch('http://localhost:3000/api/pax').then(() => showToast('🧳 PAX togglé !'));
+  fetch('/api/pax').then(() => showToast('🧳 PAX togglé !'));
 }
 
 function navStop(dir) {
-  fetch('http://localhost:3000/api/' + dir, { method: 'GET' });
+  fetch('api/' + dir, { method: 'GET' });
 }
 
 function resetState() {
   if (!confirm('Réinitialiser ?')) return;
-  fetch('http://localhost:3000/api/state').then(r => r.json()).then(s => {
+  fetch('/api/state').then(r => r.json()).then(s => {
     clearEditing();
     state = s;
     renderForm(s);
@@ -990,7 +990,7 @@ function togglePower() {
     actions.style.opacity       = '0.3';
     actions.style.pointerEvents = 'none';
   }
-  fetch('http://localhost:3000/api/power', {
+  fetch('/api/power', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ power: _overlayPowered })
@@ -1003,7 +1003,7 @@ function togglePower() {
 let _presetsCache = [];
 
 function fetchPresets() {
-  return fetch('http://localhost:3000/api/presets')
+  return fetch('/api/presets')
     .then(r => r.json())
     .then(arr => { _presetsCache = Array.isArray(arr) ? arr : []; return _presetsCache; })
     .catch(() => { _presetsCache = []; return []; });
@@ -1053,7 +1053,7 @@ function savePreset() {
     eta:         current.eta,
     stops:       current.stops
   };
-  fetch('http://localhost:3000/api/presets', {
+  fetch('/api/presets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preset)
@@ -1093,7 +1093,7 @@ function deletePreset(i) {
   const p = _presetsCache[i];
   const name = p?.name || '';
   if (!confirm(`Supprimer le preset "${name}" ?`)) return;
-  fetch(`http://localhost:3000/api/presets/${i}`, { method: 'DELETE' })
+  fetch(`/api/presets/${i}`, { method: 'DELETE' })
     .then(r => r.json())
     .then(() => {
       renderPresets();

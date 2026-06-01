@@ -6,6 +6,7 @@ const urlMod   = require('url');
 const qs       = require('querystring');
 const { WebSocketServer } = require('ws');
 
+// Render utilise process.env.PORT, sinon 3001 par défaut
 const PORT         = process.env.PORT || 3001;
 const SCOPES       = 'user-read-currently-playing user-read-playback-state';
 
@@ -38,12 +39,12 @@ const MIME = {
   '.json':'application/json', '.png':'image/png', '.svg':'image/svg+xml'
 };
 
-// ── REQUÊTES VERS LES VRAIS SERVEURS SPOTIFY ──
+// ── SÉCURISATION DES REQUÊTES SPOTIFY ──
 function spotifyPost(pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
     const req = https.request({ 
-      hostname: 'accounts.spotify.com', // Serveur d'authentification officiel
+      hostname: 'accounts.spotify.com', 
       path: pathname, 
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(b), ...headers }
@@ -52,11 +53,10 @@ function spotifyPost(pathname, body, headers={}) {
   });
 }
 
-// Correction ici : l'API de lecture utilise api.spotify.com
 function spotifyGet(pathname, headers={}) {
   return new Promise((res,rej) => {
     const req = https.request({ 
-      hostname: 'api.spotify.com', // Serveur API officiel
+      hostname: 'api.spotify.com', 
       path: pathname, 
       method: 'GET', 
       headers 
@@ -113,7 +113,7 @@ async function poll() {
 }
 setInterval(poll, 1000);
 
-// ── ROUTEUR DISTRIBUTION ──
+// ── ROUTEUR PRINCIPAL (TRAIN & SPOTIFY) ──
 const server = http.createServer(async (req,res) => {
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS,DELETE');
@@ -125,6 +125,7 @@ const server = http.createServer(async (req,res) => {
   const baseUrl = `https://${req.headers.host}`;
   const redirectUri = `${baseUrl}/callback`;
 
+  // ── ROUTES AUTH SPOTIFY ──
   if (pathname === '/auth') {
     const p = new URLSearchParams({ response_type: 'code', client_id: cfg.clientId, scope: SCOPES, redirect_uri: redirectUri, show_dialog: 'true' });
     res.writeHead(302, { Location: `https://accounts.spotify.com/authorize?${p.toString()}` });
@@ -166,7 +167,7 @@ const server = http.createServer(async (req,res) => {
     }); return;
   }
 
-  // ── ROUTES API TRAIN / BUS ──
+  // ── ROUTES API TRAIN / BUS (Avec logs de contrôle Stream Deck) ──
   if (pathname === '/api/state' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(state));
   }
@@ -239,7 +240,7 @@ const server = http.createServer(async (req,res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, presets }));
   }
 
-  // ── SERVIR LES PAGES DU HUB ──
+  // ── DISTRIBUTION DES PAGES ET ASSETS STREAMS ──
   let fp;
   if (pathname === '/' || pathname === '/train') fp = path.join(__dirname, 'dashboard.html');
   else if (pathname === '/train-overlay')        fp = path.join(__dirname, 'overlay.html');
@@ -256,7 +257,7 @@ const server = http.createServer(async (req,res) => {
   });
 });
 
-// ── WEBSOCKETS ──
+// ── WEBSOCKETS HUB (TRAIN + SPOTIFY) ──
 const wss = new WebSocketServer({ server });
 function broadcast(data) {
   const m = JSON.stringify(data);
@@ -267,6 +268,8 @@ wss.on('connection', ws => {
   ws.send(JSON.stringify({ power: powered }));
   if (powered) ws.send(JSON.stringify(state));
 });
+
+// Évite que Render coupe la connexion WebSocket (Ping toutes les 30s)
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
-server.listen(PORT, () => { console.log(`🚀 SERVEUR PRÊT SUR LE PORT ${PORT}`); });
+server.listen(PORT, () => { console.log(`🚀 HUB CONNECTÉ SUR LE PORT ${PORT}`); });

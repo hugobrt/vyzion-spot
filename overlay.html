@@ -2285,7 +2285,9 @@ function _applyTrainState(state) {
   }
 }
 
-const ws = new WebSocket('ws://localhost:3000');
+const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wsUrl = window.location.host ? `${protocol}${window.location.host}` : 'ws://127.0.0.1:3001';
+const ws = new WebSocket(wsUrl);
 ws.onmessage = e => {
   const data = JSON.parse(e.data);
   if ('power' in data && Object.keys(data).length === 1) {

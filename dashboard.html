@@ -759,8 +759,10 @@ function connectWS() {
     showDisconnectPopup();
     setTimeout(connectWS, 3000);
   };
-  ws.onmessage = e => {
+ws.onmessage = e => {
     const data = JSON.parse(e.data);
+    // Ignorer les messages Spotify et pings (même WebSocket partagé)
+    if (data.type === 'ping' || data.type === 'init' || data.type === 'track' || data.type === 'newtrack' || data.type === 'progress') return;
     // Message power-only : synchroniser le bouton power avec l'état réel du serveur
     if ('power' in data && Object.keys(data).length === 1) {
       syncPowerButton(data.power);
@@ -770,6 +772,8 @@ function connectWS() {
     if (_editing) return;
     // Ignorer si le state est d'un mode différent
     if (data.mode && data.mode !== _mode) return;
+    // Vérification de sécurité : le message doit ressembler à un state train/bus
+    if (!('operator' in data) && !('stops' in data)) return;
     state = data;
     renderForm(state);
   };

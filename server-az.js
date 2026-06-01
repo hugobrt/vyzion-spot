@@ -240,23 +240,41 @@ const server = http.createServer(async (req,res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, presets }));
   }
 
-  // ── ROUTAGE DISTRIBUTION DES PAGES (Restauré à l'identique de ton code d'origine) ──
+// ── ROUTAGE DISTRIBUTION DES PAGES (HUB + DASHBOARDS) ──
   let fp;
-  if (pathname === '/')                               fp = path.join(__dirname, 'index.html'); 
-  else if (pathname === '/train')                     fp = path.join(__dirname, 'dashboard.html');
-  else if (pathname === '/train-overlay')             fp = path.join(__dirname, 'overlay.html');
-  else if (pathname === '/dashboard')                 fp = path.join(__dirname, 'nowplaying-dashboard.html');
-  else if (pathname === '/overlay')                   fp = path.join(__dirname, 'nowplaying-overlay.html');
-  else                                                fp = path.join(__dirname, pathname);                                         fp = path.join(__dirname, pathname);
+  
+  if (pathname === '/') {
+      fp = path.join(__dirname, 'index.html');
+  }
+  else if (pathname === '/train') {
+      fp = path.join(__dirname, 'dashboard.html');
+  }
+  else if (pathname === '/train-overlay') {
+      fp = path.join(__dirname, 'overlay.html');
+  }
+  else if (pathname === '/dashboard') {
+      fp = path.join(__dirname, 'nowplaying-dashboard.html');
+  }
+  else if (pathname === '/overlay') {
+      fp = path.join(__dirname, 'nowplaying-overlay.html');
+  }
+  else {
+      fp = path.join(__dirname, pathname);
+  }
 
   const ext = path.extname(fp);
   if (!ext && fs.existsSync(fp + '.html')) fp += '.html';
 
   fs.readFile(fp, (err, data) => {
-    if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'text/plain' }); res.end(data);
+    if (err) { 
+      // Si on arrive ici, c'est que le fichier est vraiment introuvable
+      console.log("Erreur 404 - Fichier non trouvé : " + fp); 
+      res.writeHead(404); 
+      return res.end('Not found'); 
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'text/plain' }); 
+    res.end(data);
   });
-});
 
 // ── WEBSOCKETS HUB MIGRÉ RENDER ──
 const wss = new WebSocketServer({ server });

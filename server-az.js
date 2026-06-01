@@ -293,15 +293,17 @@ const server = http.createServer(async (req,res) => {
   }
 
   // ── [DISTRIBUTION DES FICHIERS STATIQUES] ──
-  let fp;
-  if (pathname==='/'||pathname==='/dashboard') {
+let fp;
+  if (pathname === '/') {
+    fp = path.join(__dirname, 'index.html'); // La racine envoie maintenant sur le Hub !
+  } else if (pathname === '/dashboard') {
     fp = path.join(__dirname, 'nowplaying-dashboard.html');
-  } else if (pathname==='/overlay') {
+  } else if (pathname === '/overlay') {
     fp = path.join(__dirname, 'nowplaying-overlay.html');
-  } else if (pathname==='/train' || pathname==='/train-dashboard') {
-    fp = path.join(__dirname, 'dashboard.html'); // Ton tableau de bord train
-  } else if (pathname==='/train-overlay') {
-    fp = path.join(__dirname, 'overlay.html');   // Ton overlay train pour OBS
+  } else if (pathname === '/train' || pathname === '/train-dashboard') {
+    fp = path.join(__dirname, 'dashboard.html');
+  } else if (pathname === '/train-overlay') {
+    fp = path.join(__dirname, 'overlay.html');
   } else {
     fp = path.join(__dirname, pathname);
   }

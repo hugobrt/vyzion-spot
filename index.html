@@ -1988,48 +1988,7 @@
 
         // Démarrer le timer dès que le hub est déverrouillé
         // (appelé après unlock réussi ou session valide)
-
     
-        // ── BADGE LIVE + NOW PLAYING ──
-        async function updateLiveAndMusic() {
-            // Badge LIVE
-            try {
-                const res  = await fetch(BASE + '/api/state', { signal: AbortSignal.timeout(3000) });
-                const data = await res.json();
-                const badge = document.getElementById('live-badge');
-                if (badge) {
-                    if (data.power) badge.classList.add('show');
-                    else            badge.classList.remove('show');
-                }
-            } catch {}
-
-            // Now Playing Spotify
-            try {
-                const res2 = await fetch(BASE + '/api/status', { signal: AbortSignal.timeout(3000) });
-                const data2 = await res2.json();
-                const np     = document.getElementById('now-playing');
-                const disc   = document.getElementById('np-disc');
-                const title  = document.getElementById('np-title');
-                const artist = document.getElementById('np-artist');
-
-                if (data2.track && data2.track.title) {
-                    if (np) np.classList.remove('hidden');
-                    if (title)  title.textContent  = data2.track.title;
-                    if (artist) artist.textContent = data2.track.artist || '—';
-                    if (disc) {
-                        disc.textContent = data2.track.isPlaying ? '▶' : '⏸';
-                        if (data2.track.isPlaying) disc.classList.add('playing');
-                        else disc.classList.remove('playing');
-                    }
-                } else {
-                    if (np) np.classList.add('hidden');
-                }
-            } catch {}
-        }
-
-        updateLiveAndMusic();
-        setInterval(updateLiveAndMusic, 5000);
-
     </script>
 
     <!-- ── MOT DE PASSE OUBLIÉ ── -->

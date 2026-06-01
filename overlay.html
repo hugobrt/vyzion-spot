@@ -1,0 +1,2882 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Train Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: transparent;
+  width: 520px;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 40px;
+  font-family: 'Space Grotesk', sans-serif;
+  overflow: hidden;
+}
+#train-panel {
+  width: 480px;
+  position: relative;
+  transform: translateX(-540px);
+  opacity: 0;
+  transition: transform 0.65s cubic-bezier(.34,1.4,.64,1), opacity .4s ease;
+}
+#train-panel.visible { transform: translateX(0); opacity: 1; }
+.panel-glass {
+  position: relative;
+  background: rgba(8,8,14,0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 24px 72px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.panel-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  transform: translateX(-140%);
+  animation: sheen 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes sheen {
+  0%, 60% { transform: translateX(-140%); }
+  74% { transform: translateX(140%); }
+  100% { transform: translateX(140%); }
+}
+.panel-body { padding: 18px 20px 20px; position: relative; z-index: 1; }
+
+/* ── HEADER ── */
+.ph-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.operator-badge { padding:5px 12px; border-radius:8px; font-size:13px; font-weight:800; flex-shrink:0; }
+.train-number { font-size:15px; font-weight:700; color:#fff; }
+.eta-badge { margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:1px; }
+.eta-label { font-size:9px; text-transform:uppercase; letter-spacing:1.3px; color:rgba(255,255,255,0.3); font-weight:700; }
+.eta-time { font-size:20px; font-weight:800; color:#fff; letter-spacing:-1px; }
+
+/* ── ROUTE ── */
+.ph-route {
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:16px; padding:10px 14px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px;
+}
+.route-city { font-size:12px; font-weight:700; color:rgba(255,255,255,0.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.route-arrow { color:rgba(255,255,255,0.25); flex-shrink:0; }
+.route-dest { font-size:12px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ── STOPS ── */
+.ph-stops-label { font-size:9px; text-transform:uppercase; letter-spacing:1.4px; color:rgba(255,255,255,0.28); font-weight:700; margin-bottom:10px; }
+.stops-track {
+  position:relative; padding-left:26px;
+  max-height:38vh; min-height:80px;
+  overflow-y:auto; padding-right:6px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,0.18) transparent;
+}
+.stops-track::-webkit-scrollbar { width:6px; }
+.stops-track::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.16); border-radius:999px; }
+.stops-track::-webkit-scrollbar-track { background:transparent; }
+.stops-track::before {
+  content:''; position:absolute; left:8px; top:8px; bottom:8px;
+  width:2px; background:rgba(255,255,255,0.1); border-radius:2px;
+}
+.stop-item {
+  display:flex; align-items:center; gap:10px;
+  padding:6px 0; position:relative;
+}
+.stop-dot {
+  position:absolute; left:-22px;
+  width:10px; height:10px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.04);
+}
+.stop-name { font-size:13px; font-weight:500; color:rgba(255,255,255,0.45); }
+
+/* Passed */
+.stop-item.passed .stop-dot { background:#00c853; border-color:#00c853; box-shadow:0 0 6px rgba(0,200,83,0.3); }
+.stop-item.passed .stop-name { color:rgba(255,255,255,0.35); }
+
+/* Current */
+.stop-item.current .stop-dot {
+  width:14px; height:14px; left:-24px;
+  background:#fff; border-color:#fff;
+  box-shadow:0 0 0 3px rgba(255,255,255,0.15), 0 0 12px rgba(255,255,255,0.4);
+  animation:currentPulse 1.8s ease-in-out infinite;
+}
+.stop-item.current .stop-name { font-weight:800; color:#fff; font-size:14px; }
+@keyframes currentPulse {
+  0%,100% { box-shadow:0 0 0 3px rgba(255,255,255,0.15), 0 0 10px rgba(255,255,255,0.3); }
+  50%     { box-shadow:0 0 0 5px rgba(255,255,255,0.08), 0 0 20px rgba(255,255,255,0.5); }
+}
+
+/* Next stop */
+.stop-item.next-stop .stop-name { color:rgba(255,255,255,0.85); font-weight:700; }
+
+/* Upcoming */
+.stop-item.upcoming .stop-name { color:rgba(255,255,255,0.45); }
+
+/* Train icon */
+.train-icon {
+  position:absolute; left:-36px; font-size:15px;
+  pointer-events:none;
+  transition:top .5s cubic-bezier(.34,1.2,.64,1);
+  filter:drop-shadow(0 0 6px rgba(255,255,255,0.5));
+  animation:trainIdle 2s ease-in-out infinite;
+}
+@keyframes trainIdle {
+  0%,100% { transform:translateY(0); }
+  50%     { transform:translateY(-2px); }
+}
+
+/* ── NEXT STOP BANNER ── */
+.next-stop-banner {
+  margin-top:14px; padding:10px 14px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;
+  display:flex; align-items:center; gap:10px;
+}
+.nsb-label { font-size:9px; text-transform:uppercase; letter-spacing:1.3px; color:rgba(255,255,255,0.3); font-weight:700; white-space:nowrap; }
+.nsb-name { font-size:14px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+
+/* ── TERMINUS BANNER ── */
+#terminus-banner {
+  display:none;
+  margin-top:14px; padding:10px 14px;
+  background:linear-gradient(90deg, rgba(0,200,83,0.14), rgba(0,200,83,0.05));
+  border:1px solid rgba(0,200,83,0.3);
+  border-radius:12px;
+  align-items:center; gap:10px;
+  overflow:hidden;
+}
+#terminus-banner.show { display:flex; }
+.tb-label { font-size:9px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; color:#00c853; white-space:nowrap; flex-shrink:0; }
+.tb-sep { width:1px; height:22px; background:rgba(0,200,83,0.3); flex-shrink:0; }
+.tb-scroll-wrap { flex:1; overflow:hidden; min-width:0; position:relative; height:24px; }
+.tb-scroll-text { display:inline-block; white-space:nowrap; font-size:14px; font-weight:800; color:#fff; }
+
+/* ── ENTRY ANIMATIONS ── */
+#train-panel.visible .ph-header     { animation:itemIn .35s ease .15s both; }
+#train-panel.visible .ph-route      { animation:itemIn .35s ease .25s both; }
+#train-panel.visible .ph-stops-label{ animation:itemIn .35s ease .32s both; }
+#train-panel.visible .stops-track   { animation:itemIn .35s ease .38s both; }
+#train-panel.visible .next-stop-banner,
+#train-panel.visible #terminus-banner { animation:itemIn .35s ease .45s both; }
+@keyframes itemIn {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── ANIMATED ARROWS ── */
+.nsb-arrows { display:flex; align-items:center; gap:3px; flex-shrink:0; }
+.nsb-arrows .arr {
+  font-size:14px;
+  font-weight:900;
+  color: rgba(255,255,255,0.15);
+  animation: arrowPulse 1.2s ease-in-out infinite;
+}
+.nsb-arrows .arr:nth-child(1) { animation-delay: 0s; }
+.nsb-arrows .arr:nth-child(2) { animation-delay: 0.2s; }
+.nsb-arrows .arr:nth-child(3) { animation-delay: 0.4s; }
+@keyframes arrowPulse {
+  0%, 100% { color: rgba(255,255,255,0.15); text-shadow: none; }
+  50%       { color: #00c853; text-shadow: 0 0 8px rgba(0,200,83,0.8); }
+}
+
+/* ══════════════════════════════════════
+   PRÉ-DÉPART
+══════════════════════════════════════ */
+#predep-screen {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+#predep-screen.show { display: flex; }
+
+/* En-tête opérateur + numéro */
+.pd-header { display:flex; align-items:center; gap:12px; }
+.pd-badge  { padding:5px 12px; border-radius:8px; font-size:13px; font-weight:800; }
+.pd-train  { font-size:15px; font-weight:700; color:#fff; }
+
+/* Route */
+.pd-route {
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+}
+.pd-city  { font-size:18px; font-weight:800; color:#fff; }
+.pd-arrow { font-size:18px; color:rgba(255,255,255,0.25); }
+
+/* Sablier */
+.pd-waiting {
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  padding: 18px 0 8px;
+}
+.pd-wait-label {
+  font-size:10px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; color:rgba(255,255,255,0.35);
+}
+
+/* ── Sablier CSS custom ── */
+.hourglass {
+  width: 36px; height: 52px;
+  position: relative;
+}
+.hg-top, .hg-bot {
+  position: absolute; left:50%;
+  width: 0; height: 0;
+  transform: translateX(-50%);
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+}
+.hg-top {
+  top: 0;
+  border-top: 22px solid rgba(255,255,255,0.15);
+  border-bottom: none;
+}
+.hg-bot {
+  bottom: 0;
+  border-bottom: 22px solid rgba(255,255,255,0.15);
+  border-top: none;
+}
+/* Sable haut (se vide) */
+.hg-sand-top {
+  position:absolute; left:50%; top:2px;
+  width:0; height:0;
+  transform: translateX(-50%);
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 17px solid rgba(255,200,50,0.7);
+  transform-origin: center top;
+  animation: sandEmpty 2.4s ease-in-out infinite;
+}
+/* Sable bas (se remplit) */
+.hg-sand-bot {
+  position:absolute; left:50%; bottom:2px;
+  width:0; height:0;
+  transform: translateX(-50%);
+  border-left: 0px solid transparent;
+  border-right: 0px solid transparent;
+  border-bottom: 0px solid rgba(255,200,50,0.7);
+  animation: sandFill 2.4s ease-in-out infinite;
+}
+/* Filet de sable au milieu */
+.hg-stream {
+  position:absolute; left:50%; top:20px;
+  width:2px; height:12px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, rgba(255,200,50,0.8), rgba(255,200,50,0));
+  animation: streamAnim 2.4s ease-in-out infinite;
+}
+/* Retournement global */
+.hourglass {
+  animation: hgFlip 2.4s ease-in-out infinite;
+}
+@keyframes hgFlip {
+  0%,45%   { transform: rotate(0deg); }
+  50%,95%  { transform: rotate(180deg); }
+  100%     { transform: rotate(180deg); }
+}
+@keyframes sandEmpty {
+  0%,10%   { border-top-width:17px; opacity:1; }
+  45%,55%  { border-top-width:0px;  opacity:0; }
+  60%,90%  { border-top-width:17px; opacity:1; }
+  100%     { border-top-width:17px; opacity:1; }
+}
+@keyframes sandFill {
+  0%,10%   { border-bottom-width:0px;  border-left-width:0px;  border-right-width:0px; }
+  45%      { border-bottom-width:17px; border-left-width:14px; border-right-width:14px; }
+  50%,55%  { border-bottom-width:17px; border-left-width:14px; border-right-width:14px; }
+  60%,90%  { border-bottom-width:0px;  border-left-width:0px;  border-right-width:0px; }
+  100%     { border-bottom-width:0px;  border-left-width:0px;  border-right-width:0px; }
+}
+@keyframes streamAnim {
+  0%,10%   { opacity:1; height:12px; }
+  45%,55%  { opacity:0; height:0; }
+  60%,100% { opacity:1; height:12px; }
+}
+
+/* Arrêts défilants */
+.pd-stops-ticker {
+  overflow:hidden; white-space:nowrap;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+}
+.pd-stops-ticker-inner {
+  display:inline-block;
+  font-size:11px; font-weight:500;
+  color:rgba(255,255,255,0.35);
+  animation: tickerScroll 18s linear infinite;
+}
+@keyframes tickerScroll {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+
+/* ══════════════════════════════════════
+   ÉCRAN PAX
+══════════════════════════════════════ */
+#pax-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 20px 20px;
+}
+#pax-screen.show { display: flex; }
+
+/* Nom gare */
+.pax-station {
+  font-size: 22px; font-weight: 800; color: #fff;
+  text-align: center; letter-spacing: -0.5px;
+  width: 100%;
+}
+/* Badge état */
+.pax-status-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 1.8px; text-transform: uppercase;
+}
+.pax-status-badge.boarding  { background: rgba(0,180,255,0.15); border:1px solid rgba(0,180,255,0.35); color:#00b4ff; }
+.pax-status-badge.closing   { background: rgba(255,60,60,0.15);  border:1px solid rgba(255,60,60,0.4);  color:#ff3c3c; }
+.pax-status-badge.departing { background: rgba(0,200,83,0.15);   border:1px solid rgba(0,200,83,0.35);  color:#00c853; }
+.pax-status-dot {
+  width:7px; height:7px; border-radius:50%;
+  background: currentColor;
+}
+.pax-status-badge.boarding  .pax-status-dot { animation: dotPulse 1s ease-in-out infinite; }
+.pax-status-badge.closing   .pax-status-dot { animation: dotBlink 0.35s step-end infinite; }
+.pax-status-badge.departing .pax-status-dot { animation: dotPulse 0.5s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+@keyframes dotBlink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+/* Zone animation SVG */
+.pax-svg-area {
+  width: 100%; height: 90px;
+  position: relative;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden;
+}
+
+/* ── Embarquement : personne marche ── */
+#svg-boarding { display:none; width:100%; height:90px; position:relative; overflow:hidden; }
+#svg-boarding.show { display:block; }
+
+.walk-person {
+  position: absolute; bottom: 8px;
+  animation: walkToTrain 2s cubic-bezier(.4,0,.6,1) infinite;
+}
+@keyframes walkToTrain {
+  0%   { left: 10px; opacity:1; }
+  75%  { left: 105px; opacity:1; }
+  85%  { left: 115px; opacity:0; }
+  86%  { left: 10px; opacity:0; }
+  100% { left: 10px; opacity:1; }
+}
+.walk-leg-l { animation: wlegL .35s ease-in-out infinite alternate; transform-origin: 7px 0; }
+.walk-leg-r { animation: wlegR .35s ease-in-out infinite alternate; transform-origin: 9px 0; }
+.walk-arm-l { animation: warmL .35s ease-in-out infinite alternate; transform-origin: 7px 2px; }
+.walk-arm-r { animation: warmR .35s ease-in-out infinite alternate; transform-origin: 9px 2px; }
+@keyframes wlegL { from{transform:rotate(-22deg)} to{transform:rotate(22deg)} }
+@keyframes wlegR { from{transform:rotate(22deg)}  to{transform:rotate(-22deg)} }
+@keyframes warmL { from{transform:rotate(18deg)}  to{transform:rotate(-18deg)} }
+@keyframes warmR { from{transform:rotate(-18deg)} to{transform:rotate(18deg)} }
+
+/* ── Fin embarquement : personne barrée clignotante ── */
+#svg-closing { display:none; }
+#svg-closing.show { display:flex; align-items:center; justify-content:center; animation: closingBlink .35s step-end infinite; }
+@keyframes closingBlink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+/* ── Départ : train qui accélère ── */
+#svg-departing { display:none; overflow:hidden; width:100%; }
+#svg-departing.show { display:block; }
+.dep-train { animation: trainAccel 1.8s cubic-bezier(.2,0,1,.6) infinite; }
+@keyframes trainAccel {
+  0%   { transform: translateX(-120px); opacity:0.6; }
+  60%  { transform: translateX(60px);  opacity:1; }
+  100% { transform: translateX(220px); opacity:0; }
+}
+.door-panel { animation: doorOpen 2s ease-in-out infinite; transform-origin: left center; }
+@keyframes doorOpen {
+  0%,20%   { transform: scaleX(1); }
+  50%,100% { transform: scaleX(0.08); }
+}
+.dep-speed-line { animation: speedLine 1.8s cubic-bezier(.2,0,1,.6) infinite; }
+@keyframes speedLine {
+  0%  { transform: translateX(0);    opacity:0; }
+  30% { opacity:0.6; }
+  100%{ transform: translateX(180px); opacity:0; }
+}
+
+/* ══════════════════════════════════════
+   PRÉ-DÉPART
+══════════════════════════════════════ */
+#predep-screen {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+#predep-screen.show { display: flex; }
+
+/* En-tête opérateur + numéro */
+.pd-header { display:flex; align-items:center; gap:12px; }
+.pd-badge  { padding:5px 12px; border-radius:8px; font-size:13px; font-weight:800; }
+.pd-train  { font-size:15px; font-weight:700; color:#fff; }
+
+/* Route */
+.pd-route {
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+}
+.pd-city  { font-size:18px; font-weight:800; color:#fff; }
+.pd-arrow { font-size:18px; color:rgba(255,255,255,0.25); }
+
+/* Sablier */
+.pd-waiting {
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  padding: 18px 0 8px;
+}
+.pd-wait-label {
+  font-size:10px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; color:rgba(255,255,255,0.35);
+}
+
+/* ── Sablier CSS custom ── */
+.hourglass {
+  width: 36px; height: 52px;
+  position: relative;
+}
+.hg-top, .hg-bot {
+  position: absolute; left:50%;
+  width: 0; height: 0;
+  transform: translateX(-50%);
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+}
+.hg-top {
+  top: 0;
+  border-top: 22px solid rgba(255,255,255,0.15);
+  border-bottom: none;
+}
+.hg-bot {
+  bottom: 0;
+  border-bottom: 22px solid rgba(255,255,255,0.15);
+  border-top: none;
+}
+/* Sable haut (se vide) */
+.hg-sand-top {
+  position:absolute; left:50%; top:2px;
+  width:0; height:0;
+  transform: translateX(-50%);
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 17px solid rgba(255,200,50,0.7);
+  transform-origin: center top;
+  animation: sandEmpty 2.4s ease-in-out infinite;
+}
+/* Sable bas (se remplit) */
+.hg-sand-bot {
+  position:absolute; left:50%; bottom:2px;
+  width:0; height:0;
+  transform: translateX(-50%);
+  border-left: 0px solid transparent;
+  border-right: 0px solid transparent;
+  border-bottom: 0px solid rgba(255,200,50,0.7);
+  animation: sandFill 2.4s ease-in-out infinite;
+}
+/* Filet de sable au milieu */
+.hg-stream {
+  position:absolute; left:50%; top:20px;
+  width:2px; height:12px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, rgba(255,200,50,0.8), rgba(255,200,50,0));
+  animation: streamAnim 2.4s ease-in-out infinite;
+}
+/* Retournement global */
+.hourglass {
+  animation: hgFlip 2.4s ease-in-out infinite;
+}
+@keyframes hgFlip {
+  0%,45%   { transform: rotate(0deg); }
+  50%,95%  { transform: rotate(180deg); }
+  100%     { transform: rotate(180deg); }
+}
+@keyframes sandEmpty {
+  0%,10%   { border-top-width:17px; opacity:1; }
+  45%,55%  { border-top-width:0px;  opacity:0; }
+  60%,90%  { border-top-width:17px; opacity:1; }
+  100%     { border-top-width:17px; opacity:1; }
+}
+@keyframes sandFill {
+  0%,10%   { border-bottom-width:0px;  border-left-width:0px;  border-right-width:0px; }
+  45%      { border-bottom-width:17px; border-left-width:14px; border-right-width:14px; }
+  50%,55%  { border-bottom-width:17px; border-left-width:14px; border-right-width:14px; }
+  60%,90%  { border-bottom-width:0px;  border-left-width:0px;  border-right-width:0px; }
+  100%     { border-bottom-width:0px;  border-left-width:0px;  border-right-width:0px; }
+}
+@keyframes streamAnim {
+  0%,10%   { opacity:1; height:12px; }
+  45%,55%  { opacity:0; height:0; }
+  60%,100% { opacity:1; height:12px; }
+}
+
+/* Arrêts défilants */
+.pd-stops-ticker {
+  overflow:hidden; white-space:nowrap;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+}
+.pd-stops-ticker-inner {
+  display:inline-block;
+  font-size:11px; font-weight:500;
+  color:rgba(255,255,255,0.35);
+  animation: tickerScroll 18s linear infinite;
+}
+@keyframes tickerScroll {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+
+/* ══════════════════════════════════════
+   ÉCRAN PAX
+══════════════════════════════════════ */
+#pax-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 20px;
+}
+#pax-screen.show { display: flex; }
+
+.pax-station {
+  font-size: 20px; font-weight: 800; color: #fff;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+.pax-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+}
+
+/* ── SVG Embarquement : personne qui marche ── */
+.pax-anim-wrap {
+  position: relative; width: 180px; height: 80px;
+  overflow: hidden;
+}
+/* Personne SVG */
+.pax-person {
+  position: absolute; bottom: 10px;
+  animation: walkIn 1.6s ease-in-out infinite;
+}
+@keyframes walkIn {
+  0%   { left: -20px; }
+  80%  { left: 90px; }
+  100% { left: 90px; opacity:0; }
+}
+/* Jambe gauche */
+.leg-l { animation: legL 0.4s ease-in-out infinite alternate; transform-origin: 6px 0; }
+/* Jambe droite */
+.leg-r { animation: legR 0.4s ease-in-out infinite alternate; transform-origin: 10px 0; }
+/* Bras gauche */
+.arm-l { animation: armL 0.4s ease-in-out infinite alternate; transform-origin: 6px 0; }
+/* Bras droit */
+.arm-r { animation: armR 0.4s ease-in-out infinite alternate; transform-origin: 10px 0; }
+@keyframes legL { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+@keyframes legR { from { transform: rotate(20deg); }  to { transform: rotate(-20deg); } }
+@keyframes armL { from { transform: rotate(20deg); }  to { transform: rotate(-20deg); } }
+@keyframes armR { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+
+/* Porte du train */
+.pax-door {
+  position: absolute; right: 20px; bottom: 0;
+}
+/* Ouverture porte */
+.door-panel {
+  animation: doorOpen 2s ease-in-out infinite;
+  transform-origin: left center;
+}
+@keyframes doorOpen {
+  0%,30% { transform: scaleX(1); }
+  50%,100% { transform: scaleX(0.15); }
+}
+
+/* ── SVG Fin d'embarquement : personne barrée ── */
+#pax-fin { display:none; }
+#pax-fin.show { display:block; animation: blinkRed 0.4s step-end infinite; }
+@keyframes blinkRed {
+  0%,100% { opacity:1; }
+  50%     { opacity:0.2; }
+}
+
+/* ── SVG Départ : train qui part ── */
+#pax-depart { display:none; }
+#pax-depart.show {
+  display:block;
+  animation: trainGo 0.8s ease-in infinite;
+}
+@keyframes trainGo {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(60px); opacity:0; }
+}
+
+
+/* ══════════════════════════════════════
+   ÉCRAN FIN DE SERVICE
+══════════════════════════════════════ */
+#fin-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 20px 20px;
+}
+#fin-screen.show { display: flex; }
+
+.fin-terminus {
+  font-size: 42px; font-weight: 900; color: #fff;
+  letter-spacing: -1px; line-height: 1;
+  animation: terminusGlow 2s ease-in-out infinite;
+}
+@keyframes terminusGlow {
+  0%,100% { text-shadow: 0 0 20px rgba(0,200,83,0.4); color: #fff; }
+  50%     { text-shadow: 0 0 40px rgba(0,200,83,0.9); color: #e0ffe8; }
+}
+.fin-service {
+  font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+}
+.fin-info {
+  font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.65);
+  text-align: center;
+}
+.fin-divider {
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,200,83,0.5), transparent);
+  margin: 4px 0;
+}
+
+/* ── Unload PAX : personnes qui sortent du train ── */
+.unload-wrap {
+  width: 100%; height: 70px;
+  position: relative; overflow: hidden;
+  margin-top: 6px;
+}
+/* Train fixe à gauche */
+.unload-train {
+  position: absolute; left: 4px; bottom: 4px;
+}
+/* Personnes qui sortent une par une */
+.unload-person {
+  position: absolute; bottom: 8px;
+  animation: unloadWalk 1.8s linear infinite;
+}
+.unload-person:nth-child(2) { animation-delay: 0.6s; }
+.unload-person:nth-child(3) { animation-delay: 1.2s; }
+@keyframes unloadWalk {
+  0%   { left: 58px; opacity: 0; }
+  8%   { opacity: 1; }
+  100% { left: 200px; opacity: 0.3; }
+}
+.ul-leg-l { animation: wlegL .35s ease-in-out infinite alternate; transform-origin: 7px 0; }
+.ul-leg-r { animation: wlegR .35s ease-in-out infinite alternate; transform-origin: 9px 0; }
+.ul-arm-l { animation: warmL .35s ease-in-out infinite alternate; transform-origin: 7px 2px; }
+.ul-arm-r { animation: warmR .35s ease-in-out infinite alternate; transform-origin: 9px 2px; }
+
+
+/* ══════════════════════════════════════
+   PASTILLE ATTENTE SERVICE
+══════════════════════════════════════ */
+#idle-pill {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(8,8,14,0.88);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  width: fit-content;
+  backdrop-filter: blur(24px);
+  transition: padding 0.5s cubic-bezier(.4,0,.2,1),
+              gap 0.5s cubic-bezier(.4,0,.2,1),
+              border-color 0.4s ease;
+}
+#idle-pill.show {
+  display: flex;
+  animation: pillIn 0.5s cubic-bezier(.34,1.4,.64,1) both;
+}
+@keyframes pillIn {
+  from { opacity: 0; transform: translateX(-18px) scale(0.85); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);    }
+}
+
+.idle-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  animation: dotPulse 1.8s ease-in-out infinite;
+}
+.idle-ticker-wrap {
+  overflow: hidden; max-width: 160px; position: relative;
+  transition: max-width 0.5s cubic-bezier(.4,0,.2,1), opacity 0.5s ease;
+}
+.idle-ticker-text {
+  display: inline-block;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+  animation: idleTicker 6s linear infinite;
+}
+@keyframes idleTicker {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Pastille réduite : juste le point */
+#idle-pill.has-transition {
+  transition: padding 0.5s cubic-bezier(.4,0,.2,1),
+              gap 0.5s cubic-bezier(.4,0,.2,1),
+              border-color 0.4s ease;
+}
+#idle-pill.minimal {
+  padding: 8px;
+  gap: 0;
+  border-color: rgba(255,255,255,0.06);
+}
+#idle-pill.minimal .idle-ticker-wrap {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* Animation collapse du panel */
+#train-panel.collapsing {
+  animation: collapsePanel 0.6s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes collapsePanel {
+  0%   { transform: translateX(0) scaleY(1); opacity: 1; }
+  100% { transform: translateX(0) scaleY(0); opacity: 0; }
+}
+
+
+/* ══════════════════════════════════════
+   ÉCRAN NO SERVICE
+══════════════════════════════════════ */
+#no-service-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 20px;
+}
+#no-service-screen.show { display: flex; }
+
+.ns-icon {
+  position: relative; width: 60px; height: 60px;
+}
+.ns-circle {
+  width: 60px; height: 60px; border-radius: 50%;
+  border: 3px solid rgba(255,60,60,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.ns-bar {
+  width: 3px; height: 32px;
+  background: rgba(255,60,60,0.8);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+.ns-cross-line {
+  position: absolute; top: 50%; left: 50%;
+  width: 38px; height: 3px;
+  background: rgba(255,60,60,0.8);
+  border-radius: 2px;
+  transform: translate(-50%,-50%) rotate(45deg);
+}
+/* Train barré */
+.ns-train-wrap {
+  position: relative; display: inline-block;
+}
+.ns-train-wrap svg { opacity: 0.35; }
+.ns-redline {
+  position: absolute; top: 50%; left: -5px; right: -5px; height: 3px;
+  background: #ff3c3c;
+  border-radius: 2px;
+  transform: translateY(-50%) rotate(-8deg);
+  box-shadow: 0 0 8px rgba(255,60,60,0.6);
+}
+
+.ns-title {
+  font-size: 18px; font-weight: 800; color: rgba(255,255,255,0.5);
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.ns-countdown {
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 1px;
+}
+
+
+/* ══════════════════════════════════════
+   MODE SWITCH PILL
+══════════════════════════════════════ */
+#mode-switch-pill {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(8,8,14,0.94);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  width: fit-content;
+  backdrop-filter: blur(24px);
+  transition: padding 0.55s cubic-bezier(.4,0,.2,1),
+              gap 0.55s cubic-bezier(.4,0,.2,1),
+              border-radius 0.55s cubic-bezier(.4,0,.2,1),
+              border-color 0.5s ease,
+              box-shadow 0.5s ease;
+}
+#mode-switch-pill.show {
+  display: flex;
+  animation: pillIn 0.45s cubic-bezier(.34,1.4,.64,1) both;
+}
+#mode-switch-pill.expanded {
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 20px;
+  padding: 18px 22px;
+  gap: 14px;
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: 0 0 28px rgba(255,255,255,0.07);
+}
+#mode-switch-pill.hide {
+  animation: pillOut 0.45s cubic-bezier(.4,0,.2,1) both;
+}
+.ms-compact { display: flex; align-items: center; gap: 8px; }
+#mode-switch-pill.expanded .ms-compact { display: none; }
+.ms-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.55); flex-shrink: 0;
+  animation: bootDotPulse 1s ease-in-out infinite;
+}
+.ms-compact-text {
+  font-size: 12px; color: rgba(255,255,255,0.6);
+  font-family: 'SF Mono','Fira Code',monospace; letter-spacing:.08em; white-space:nowrap;
+}
+.ms-expanded { display: none; flex-direction: column; gap: 12px; width: 100%; }
+#mode-switch-pill.expanded .ms-expanded { display: flex; }
+.ms-header { display: flex; align-items: center; gap: 12px; }
+.ms-icon { font-size: 28px; line-height:1; filter: drop-shadow(0 0 8px rgba(255,255,255,0.3)); }
+.ms-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.ms-sub   { font-size: 11px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 2px; }
+.ms-bar-wrap {
+  width: 100%; height: 3px;
+  background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;
+}
+.ms-bar-fill {
+  height: 100%; width: 0%; border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0.9));
+  transition: width 2s cubic-bezier(.4,0,.6,1);
+}
+
+#boot-pill {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(8,8,14,0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  width: fit-content;
+  backdrop-filter: blur(24px);
+  transition: padding 0.6s cubic-bezier(.4,0,.2,1),
+              gap 0.6s cubic-bezier(.4,0,.2,1),
+              border-color 0.5s ease,
+              box-shadow 0.5s ease;
+}
+#boot-pill.show {
+  display: flex;
+  animation: pillIn 0.5s cubic-bezier(.34,1.4,.64,1) both;
+}
+#boot-pill.expanded {
+  border-color: rgba(255,255,255,0.25);
+  box-shadow: 0 0 32px rgba(255,255,255,0.08);
+  flex-direction: column;
+  align-items: center;
+  border-radius: 24px;
+  padding: 24px 32px;
+  gap: 20px;
+}
+#boot-pill.hide {
+  animation: pillOut 0.5s cubic-bezier(.4,0,.2,1) both;
+}
+
+/* dot pulsant */
+.boot-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  flex-shrink: 0;
+  animation: bootDotPulse 1s ease-in-out infinite;
+}
+#boot-pill.expanded .boot-dot { display: none; }
+
+@keyframes bootDotPulse {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+/* texte "starting..." */
+.boot-starting {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+#boot-pill.expanded .boot-starting { display: none; }
+
+.boot-dots-anim {
+  display: inline-block;
+  animation: dotsCycle 1.2s steps(4, end) infinite;
+  width: 1.8ch;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+@keyframes dotsCycle {
+  0%  { width: 0;     }
+  25% { width: 0.6ch; }
+  50% { width: 1.2ch; }
+  75% { width: 1.8ch; }
+  100%{ width: 0;     }
+}
+
+/* contenu étendu */
+.boot-expanded-content {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+#boot-pill.expanded .boot-expanded-content { display: flex; }
+
+/* SVG power */
+.boot-power-svg {
+  width: 56px; height: 56px;
+  filter: drop-shadow(0 0 12px rgba(255,255,255,0.3));
+}
+.boot-power-ring {
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+  animation: drawRing 0.7s ease 0.1s forwards;
+}
+.boot-power-line {
+  stroke-dasharray: 18;
+  stroke-dashoffset: 18;
+  animation: drawLine 0.4s ease 0.6s forwards;
+}
+@keyframes drawRing { to { stroke-dashoffset: 0; } }
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+/* steps */
+.boot-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.boot-step {
+  font-size: 12px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0);
+  transition: color 0.4s ease;
+}
+.boot-step.active  { color: rgba(255,255,255,0.9); }
+.boot-step.done    {
+  color: rgba(255,255,255,0.3);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,255,255,0.15);
+}
+
+@keyframes pillOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.85) translateY(-8px); }
+}
+
+
+/* ══════════════════════════════════════
+   SHUTDOWN SEQUENCE PILL
+══════════════════════════════════════ */
+#shutdown-pill {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(8,8,14,0.92);
+  border: 1px solid rgba(255,80,80,0.3);
+  border-radius: 999px;
+  overflow: hidden;
+  width: fit-content;
+  backdrop-filter: blur(24px);
+  transition: padding 0.6s cubic-bezier(.4,0,.2,1),
+              gap 0.6s cubic-bezier(.4,0,.2,1),
+              border-radius 0.6s cubic-bezier(.4,0,.2,1),
+              border-color 0.5s ease,
+              box-shadow 0.5s ease;
+}
+#shutdown-pill.show {
+  display: flex;
+  animation: pillIn 0.5s cubic-bezier(.34,1.4,.64,1) both;
+}
+#shutdown-pill.expanded {
+  border-color: rgba(255,80,80,0.5);
+  box-shadow: 0 0 32px rgba(255,60,60,0.12);
+  flex-direction: column;
+  align-items: center;
+  border-radius: 24px;
+  padding: 24px 32px;
+  gap: 16px;
+}
+#shutdown-pill.compact {
+  flex-direction: row;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 16px;
+  gap: 10px;
+  border-color: rgba(255,80,80,0.2);
+  box-shadow: none;
+}
+#shutdown-pill.fadeout {
+  animation: pillFadeOut 0.8s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes pillFadeOut {
+  from { opacity: 1; transform: scale(1) translateX(0); }
+  to   { opacity: 0; transform: scale(0.88) translateX(-12px); }
+}
+
+/* dot rouge pulsant */
+.shutdown-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,80,80,0.8);
+  flex-shrink: 0;
+  animation: shutdownDotPulse 0.8s ease-in-out infinite;
+}
+#shutdown-pill.expanded .shutdown-dot { display: none; }
+@keyframes shutdownDotPulse {
+  0%,100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.5); }
+}
+
+/* texte compact */
+.shutdown-compact-text {
+  font-size: 13px;
+  color: rgba(255,120,120,0.8);
+  font-family: 'SF Mono','Fira Code',monospace;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+#shutdown-pill.expanded .shutdown-compact-text { display: none; }
+
+/* contenu étendu */
+.shutdown-expanded-content {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+#shutdown-pill.expanded .shutdown-expanded-content { display: flex; }
+
+/* SVG power off (même icône, couleur rouge) */
+.shutdown-power-svg {
+  width: 52px; height: 52px;
+  filter: drop-shadow(0 0 10px rgba(255,60,60,0.4));
+}
+.shutdown-power-ring {
+  stroke-dasharray: 90;
+  stroke-dashoffset: 0;
+  animation: eraseRing 0.7s ease 0.2s forwards;
+}
+.shutdown-power-line {
+  stroke-dasharray: 18;
+  stroke-dashoffset: 0;
+  animation: eraseLine 0.35s ease 0s forwards;
+}
+@keyframes eraseRing { to { stroke-dashoffset: 90; } }
+@keyframes eraseLine { to { stroke-dashoffset: 18; } }
+
+/* label déconnexion */
+.shutdown-label {
+  font-size: 13px;
+  font-family: 'SF Mono','Fira Code',monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,120,120,0.9);
+}
+
+/* compte à rebours */
+.shutdown-countdown {
+  font-size: 38px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(255,80,80,0.5);
+  transition: transform 0.2s cubic-bezier(.34,1.4,.64,1);
+}
+.shutdown-countdown.tick { transform: scale(1.25); }
+.shutdown-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+
+/* ══════════════════════════════════════
+   MODE BUS — PANEL
+══════════════════════════════════════ */
+#bus-panel {
+  width:480px; position:relative;
+  transform:translateX(-540px); opacity:0;
+  transition:transform 0.65s cubic-bezier(.34,1.4,.64,1), opacity .4s ease;
+}
+#bus-panel.visible { transform:translateX(0); opacity:1; }
+#bus-panel.collapsing { animation:collapsePanel 0.6s cubic-bezier(.4,0,.2,1) forwards; }
+
+#bus-panel.visible #bus-ph-header      { animation:itemIn .35s ease .15s both; }
+#bus-panel.visible #bus-ph-route       { animation:itemIn .35s ease .25s both; }
+#bus-panel.visible #bus-ph-stops-label { animation:itemIn .35s ease .32s both; }
+#bus-panel.visible #bus-stops-track    { animation:itemIn .35s ease .38s both; }
+#bus-panel.visible #bus-next-banner,
+#bus-panel.visible #bus-terminus-banner { animation:itemIn .35s ease .45s both; }
+
+/* Icône bus animé */
+@keyframes busIdle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1.5px)} }
+#bus-icon {
+  position:absolute; left:-36px; font-size:14px; pointer-events:none;
+  transition:top .5s cubic-bezier(.34,1.2,.64,1);
+  filter:drop-shadow(0 0 6px rgba(255,255,255,0.5));
+  animation:busIdle 2.2s ease-in-out infinite;
+}
+
+/* Feux de détresse */
+.bus-hazard-wrap { position:relative; display:inline-flex; align-items:center; }
+.haz-l, .haz-r { position:absolute; top:8px; width:6px; height:9px; border-radius:2px; background:#ffb347; }
+.haz-l { left:-11px;  animation:hazBlink 1s step-end infinite; }
+.haz-r { right:-11px; animation:hazBlink 1s step-end infinite 0.5s; }
+@keyframes hazBlink { 0%,100%{opacity:1;box-shadow:0 0 7px #ffb347} 50%{opacity:0;box-shadow:none} }
+
+/* File d'attente passagers */
+.pd-pax-queue { display:flex; gap:6px; align-items:flex-end; }
+.pd-pax-sil { animation:silIn 2s ease-in-out infinite; opacity:0; }
+.pd-pax-sil:nth-child(2){animation-delay:.4s}
+.pd-pax-sil:nth-child(3){animation-delay:.8s}
+@keyframes silIn { 0%,10%{opacity:0;transform:translateY(4px)} 30%,70%{opacity:.55;transform:translateY(0)} 90%,100%{opacity:0;transform:translateY(4px)} }
+
+/* Écrans bus */
+#bus-no-service-screen { display:none; flex-direction:column; align-items:center; gap:14px; padding:28px 20px; }
+#bus-no-service-screen.show { display:flex; }
+#bus-fin-screen { display:none; flex-direction:column; align-items:center; gap:10px; padding:24px 20px 20px; }
+#bus-fin-screen.show { display:flex; }
+#bus-pax-screen { display:none; flex-direction:column; align-items:center; gap:14px; padding:22px 20px 20px; }
+#bus-pax-screen.show { display:flex; }
+#bus-predep-screen { display:none; flex-direction:column; gap:16px; padding:20px; }
+
+/* ══════════════════════════════════════
+   MODE BUS — IDENTITÉ VISUELLE DÉDIÉE
+   Couleur d'accent : ambre/jaune signalétique urbaine
+══════════════════════════════════════ */
+
+/* Glass panel bus : teinte plus chaude */
+#bus-panel .panel-glass {
+  background: rgba(14,10,6,0.9);
+  border: 1px solid rgba(255,179,0,0.18);
+  box-shadow: 0 24px 72px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,200,80,0.08);
+}
+#bus-panel .panel-glass::after {
+  background: linear-gradient(120deg, transparent 0%, rgba(255,200,80,0.06) 50%, transparent 100%);
+}
+
+/* ── HEADER BUS : gros numéro de ligne style signalétique ── */
+#bus-panel #bus-ph-header {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed rgba(255,179,0,0.15);
+  margin-bottom: 14px;
+}
+#bus-panel #bus-op-badge {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 12px !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px;
+  padding: 0 !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+#bus-panel #bus-op-badge::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(255,255,255,0.12) 0%, transparent 50%);
+  pointer-events: none;
+}
+#bus-panel #bus-line-number {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(255,179,0,0.8);
+  line-height: 1.2;
+}
+/* Opérateur en petit sous la ligne */
+.bus-operator-sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4);
+  text-transform: none;
+  margin-top: 2px;
+  display: block;
+}
+#bus-panel .eta-badge { gap: 2px; }
+#bus-panel .eta-label { color: rgba(255,179,0,0.6); font-size:9px; letter-spacing:1.2px; }
+#bus-panel .eta-time  {
+  color: #FFB300;
+  font-size: 18px;
+  font-weight: 800;
+  text-shadow: 0 0 14px rgba(255,179,0,0.3);
+}
+
+/* ── ROUTE BUS ── */
+#bus-panel #bus-ph-route {
+  background: rgba(255,179,0,0.06);
+  border: 1px solid rgba(255,179,0,0.15);
+}
+#bus-panel #bus-ph-route .route-city { color: rgba(255,220,160,0.75); }
+#bus-panel #bus-ph-route .route-arrow {
+  color: rgba(255,179,0,0.5);
+  font-size: 14px;
+  animation: busRouteArrow 1.6s ease-in-out infinite;
+}
+@keyframes busRouteArrow {
+  0%,100% { transform: translateX(0); opacity: 0.5; }
+  50%     { transform: translateX(3px); opacity: 1; }
+}
+#bus-panel #bus-ph-route .route-dest  { color: #fff; }
+
+/* ── LABEL ARRÊTS ── */
+#bus-panel #bus-ph-stops-label {
+  color: rgba(255,179,0,0.5);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#bus-panel #bus-ph-stops-label::before {
+  content: '';
+  width: 3px; height: 10px;
+  background: #FFB300;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255,179,0,0.6);
+}
+
+/* ── STOPS TRACK BUS ── */
+#bus-panel #bus-stops-track::before {
+  background: linear-gradient(to bottom, rgba(255,179,0,0.18), rgba(255,179,0,0.06));
+}
+#bus-panel .stop-item.passed .stop-dot {
+  background: #FFB300;
+  border-color: #FFB300;
+  box-shadow: 0 0 6px rgba(255,179,0,0.4);
+}
+#bus-panel .stop-item.current .stop-dot {
+  background: #FFB300;
+  border-color: #FFB300;
+  box-shadow: 0 0 0 3px rgba(255,179,0,0.2), 0 0 14px rgba(255,179,0,0.6);
+  animation: busCurrentPulse 1.8s ease-in-out infinite;
+}
+#bus-panel .stop-item.current .stop-name {
+  color: #FFD980;
+  font-weight: 800;
+}
+@keyframes busCurrentPulse {
+  0%,100% { box-shadow:0 0 0 3px rgba(255,179,0,0.2), 0 0 12px rgba(255,179,0,0.5); }
+  50%     { box-shadow:0 0 0 5px rgba(255,179,0,0.1), 0 0 22px rgba(255,179,0,0.7); }
+}
+#bus-panel .stop-item.next-stop .stop-name {
+  color: rgba(255,220,160,0.9);
+  font-weight: 700;
+}
+#bus-panel #bus-icon {
+  font-size: 16px;
+  filter: drop-shadow(0 0 8px rgba(255,179,0,0.7));
+}
+
+/* ── NEXT STOP BANNER BUS ── */
+#bus-panel #bus-next-banner {
+  background: linear-gradient(90deg, rgba(255,179,0,0.1), rgba(255,179,0,0.03));
+  border: 1px solid rgba(255,179,0,0.25);
+}
+#bus-panel #bus-next-banner .nsb-label { color: #FFB300; }
+#bus-panel #bus-next-banner .nsb-arrows .arr {
+  animation: busArrowPulse 1.2s ease-in-out infinite;
+}
+#bus-panel #bus-next-banner .nsb-arrows .arr:nth-child(1) { animation-delay: 0s; }
+#bus-panel #bus-next-banner .nsb-arrows .arr:nth-child(2) { animation-delay: 0.2s; }
+#bus-panel #bus-next-banner .nsb-arrows .arr:nth-child(3) { animation-delay: 0.4s; }
+@keyframes busArrowPulse {
+  0%,100% { color: rgba(255,179,0,0.15); text-shadow: none; }
+  50%     { color: #FFB300; text-shadow: 0 0 8px rgba(255,179,0,0.8); }
+}
+
+/* ── TERMINUS BANNER BUS ── */
+#bus-panel #bus-terminus-banner {
+  background: linear-gradient(90deg, rgba(255,120,0,0.15), rgba(255,179,0,0.05));
+  border: 1px solid rgba(255,140,0,0.35);
+}
+#bus-panel #bus-terminus-banner .tb-label { color: #FF9500; }
+#bus-panel #bus-terminus-banner .tb-sep   { background: rgba(255,140,0,0.3); }
+
+/* ── PRÉ-DÉPART BUS : accent ambre ── */
+#bus-panel #bus-pd-badge {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 10px !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  padding: 0 !important;
+}
+#bus-panel #bus-predep-screen .pd-route {
+  background: rgba(255,179,0,0.05);
+  border-color: rgba(255,179,0,0.15);
+}
+#bus-panel #bus-predep-screen .pd-wait-label { color: rgba(255,179,0,0.55); }
+#bus-panel #bus-predep-screen .pd-stops-ticker {
+  background: rgba(255,179,0,0.04);
+  border: 1px solid rgba(255,179,0,0.1);
+}
+#bus-panel #bus-predep-screen .pd-stops-ticker-inner { color: rgba(255,220,160,0.5); }
+
+/* ── STOP DOT DEFAULT BUS (upcoming) ── */
+#bus-panel .stop-item .stop-dot {
+  border-color: rgba(255,179,0,0.2);
+  background: rgba(255,179,0,0.05);
+}
+
+#bus-predep-screen.show { display:flex; }
+
+/* Bannières bus */
+#bus-next-banner { margin-top:14px; padding:10px 14px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; display:flex; align-items:center; gap:10px; }
+#bus-terminus-banner { display:none; margin-top:14px; padding:10px 14px; background:linear-gradient(90deg,rgba(0,200,83,0.14),rgba(0,200,83,0.05)); border:1px solid rgba(0,200,83,0.3); border-radius:12px; align-items:center; gap:10px; overflow:hidden; }
+#bus-terminus-banner.show { display:flex; }
+
+/* Stops track bus */
+#bus-stops-track { position:relative; padding-left:26px; max-height:38vh; min-height:80px; overflow-y:auto; padding-right:6px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.18) transparent; }
+#bus-stops-track::-webkit-scrollbar { width:6px; }
+#bus-stops-track::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.16); border-radius:999px; }
+#bus-stops-track::before { content:''; position:absolute; left:8px; top:8px; bottom:8px; width:2px; background:rgba(255,255,255,0.1); border-radius:2px; }
+
+/* PAX bus svgs */
+#bus-svg-boarding { display:none; width:100%; height:90px; position:relative; overflow:hidden; }
+#bus-svg-boarding.show { display:block; }
+#bus-svg-closing { display:none; }
+#bus-svg-closing.show { display:flex; align-items:center; justify-content:center; animation:closingBlink .35s step-end infinite; }
+#bus-svg-departing { display:none; height:60px; position:relative; overflow:hidden; width:100%; }
+#bus-svg-departing.show { display:block; }
+.dep-bus-anim { animation:busAccelAnim 1.8s cubic-bezier(.2,0,1,.6) infinite; }
+@keyframes busAccelAnim { 0%{transform:translateX(-130px);opacity:.6} 60%{transform:translateX(55px);opacity:1} 100%{transform:translateX(260px);opacity:0} }
+
+</style>
+</head>
+<body>
+<div id="train-panel" style="display:none">
+  <div class="panel-glass">
+    <div class="panel-body">
+    
+    <!-- ══ ÉCRAN NO SERVICE ══ -->
+    <div id="no-service-screen">
+      <div class="ns-train-wrap">
+        <svg width="100" height="36" viewBox="0 0 100 36">
+          <rect x="5" y="4" width="72" height="22" rx="6" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <ellipse cx="77" cy="15" rx="12" ry="11" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <rect x="12" y="7" width="10" height="8" rx="2" fill="rgba(255,255,255,0.1)"/>
+          <rect x="28" y="7" width="10" height="8" rx="2" fill="rgba(255,255,255,0.1)"/>
+          <rect x="44" y="7" width="10" height="8" rx="2" fill="rgba(255,255,255,0.1)"/>
+          <circle cx="18" cy="29" r="4" fill="rgba(255,255,255,0.12)"/>
+          <circle cx="48" cy="29" r="4" fill="rgba(255,255,255,0.12)"/>
+          <circle cx="72" cy="29" r="4" fill="rgba(255,255,255,0.12)"/>
+        </svg>
+        <div class="ns-redline"></div>
+      </div>
+      <span class="ns-title">No Service</span>
+      <span class="ns-countdown" id="ns-countdown">Veille dans 10s</span>
+    </div>
+
+    <!-- ══ ÉCRAN FIN DE SERVICE ══ -->
+    <div id="fin-screen">
+      <span class="fin-terminus">TERMINUS</span>
+      <div class="fin-divider"></div>
+      <span class="fin-service">Fin de service</span>
+      <span class="fin-info" id="fin-info">—</span>
+
+      <!-- Unload PAX -->
+      <div class="unload-wrap">
+        <!-- Train fixe -->
+        <svg class="unload-train" width="65" height="52" viewBox="0 0 65 52">
+          <rect x="0" y="4" width="60" height="36" rx="6" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <ellipse cx="60" cy="22" rx="10" ry="18" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <rect x="6"  y="8"  width="14" height="10" rx="2" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <rect x="26" y="8"  width="14" height="10" rx="2" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <!-- Porte ouverte -->
+          <rect x="4" y="18" width="18" height="22" rx="2" fill="rgba(255,255,255,0.06)" stroke="rgba(0,200,83,0.5)" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <circle cx="24" cy="44" r="5" fill="rgba(255,255,255,0.15)"/>
+          <circle cx="48" cy="44" r="5" fill="rgba(255,255,255,0.15)"/>
+        </svg>
+
+        <!-- 3 personnes qui sortent -->
+        <svg class="unload-person" width="18" height="40" viewBox="0 0 18 40">
+          <circle cx="9" cy="4.5" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <line x1="9" y1="9" x2="9" y2="24" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round"/>
+          <line class="ul-arm-l" x1="6" y1="13" x2="1"  y2="20" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"/>
+          <line class="ul-arm-r" x1="9" y1="13" x2="15" y2="20" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"/>
+          <line class="ul-leg-l" x1="6" y1="24" x2="2"  y2="36" stroke="rgba(255,255,255,0.85)" stroke-width="2"   stroke-linecap="round"/>
+          <line class="ul-leg-r" x1="9" y1="24" x2="14" y2="36" stroke="rgba(255,255,255,0.85)" stroke-width="2"   stroke-linecap="round"/>
+        </svg>
+        <svg class="unload-person" width="18" height="40" viewBox="0 0 18 40">
+          <circle cx="9" cy="4.5" r="4.5" fill="rgba(255,255,255,0.7)"/>
+          <line x1="9" y1="9" x2="9" y2="24" stroke="rgba(255,255,255,0.7)" stroke-width="2.2" stroke-linecap="round"/>
+          <line class="ul-arm-l" x1="6" y1="13" x2="1"  y2="20" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-linecap="round"/>
+          <line class="ul-arm-r" x1="9" y1="13" x2="15" y2="20" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-linecap="round"/>
+          <line class="ul-leg-l" x1="6" y1="24" x2="2"  y2="36" stroke="rgba(255,255,255,0.7)" stroke-width="2"   stroke-linecap="round"/>
+          <line class="ul-leg-r" x1="9" y1="24" x2="14" y2="36" stroke="rgba(255,255,255,0.7)" stroke-width="2"   stroke-linecap="round"/>
+        </svg>
+        <svg class="unload-person" width="18" height="40" viewBox="0 0 18 40">
+          <circle cx="9" cy="4.5" r="4.5" fill="rgba(255,255,255,0.55)"/>
+          <line x1="9" y1="9" x2="9" y2="24" stroke="rgba(255,255,255,0.55)" stroke-width="2.2" stroke-linecap="round"/>
+          <line class="ul-arm-l" x1="6" y1="13" x2="1"  y2="20" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"/>
+          <line class="ul-arm-r" x1="9" y1="13" x2="15" y2="20" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"/>
+          <line class="ul-leg-l" x1="6" y1="24" x2="2"  y2="36" stroke="rgba(255,255,255,0.55)" stroke-width="2"   stroke-linecap="round"/>
+          <line class="ul-leg-r" x1="9" y1="24" x2="14" y2="36" stroke="rgba(255,255,255,0.55)" stroke-width="2"   stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ══ ÉCRAN PAX ══ -->
+    <div id="pax-screen">
+
+      <!-- Nom de la gare -->
+      <span class="pax-station" id="pax-station-name">—</span>
+
+      <!-- Badge statut -->
+      <div class="pax-status-badge boarding" id="pax-badge">
+        <span class="pax-status-dot"></span>
+        <span id="pax-badge-text">Embarquement en cours</span>
+      </div>
+
+      <!-- Zone animation : embarquement -->
+      <div id="svg-boarding">
+        <!-- Personne qui marche -->
+        <svg class="walk-person" width="22" height="48" viewBox="0 0 22 48">
+          <circle cx="11" cy="5" r="5" fill="#fff"/>
+          <line x1="11" y1="10" x2="11" y2="28" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          <line class="walk-arm-l" x1="7"  y1="14" x2="2"  y2="23" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <line class="walk-arm-r" x1="11" y1="14" x2="18" y2="23" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <line class="walk-leg-l" x1="7"  y1="28" x2="3"  y2="42" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+          <line class="walk-leg-r" x1="11" y1="28" x2="16" y2="42" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <!-- Wagon avec porte -->
+        <svg style="position:absolute;right:10px;bottom:0" width="70" height="82" viewBox="0 0 70 82">
+          <rect x="0" y="0" width="70" height="82" rx="5" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+          <rect x="8" y="4" width="54" height="20" rx="3" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <rect class="door-panel" x="10" y="26" width="50" height="52" rx="3" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+          <circle cx="55" cy="52" r="3" fill="rgba(255,255,255,0.4)"/>
+        </svg>
+      </div>
+
+      <!-- Fin d'embarquement : personne barrée -->
+      <div id="svg-closing">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="10" r="7" fill="none" stroke="#ff3c3c" stroke-width="2.5"/>
+          <line x1="32" y1="17" x2="32" y2="36" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="20" y1="25" x2="44" y2="25" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="32" y1="36" x2="22" y2="54" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="32" y1="36" x2="42" y2="54" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="29" fill="none" stroke="#ff3c3c" stroke-width="3"/>
+          <line x1="8" y1="8" x2="56" y2="56" stroke="#ff3c3c" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- Départ en cours : train qui accélère -->
+      <div id="svg-departing" style="height:60px;position:relative;">
+        <svg class="dep-train" style="position:absolute;bottom:4px;" width="130" height="48" viewBox="0 0 130 48">
+          <rect x="10" y="8" width="90" height="26" rx="8" fill="rgba(255,255,255,0.92)"/>
+          <ellipse cx="100" cy="21" rx="16" ry="13" fill="rgba(255,255,255,0.92)"/>
+          <rect x="18" y="12" width="14" height="10" rx="2" fill="rgba(0,0,0,0.25)"/>
+          <rect x="38" y="12" width="14" height="10" rx="2" fill="rgba(0,0,0,0.25)"/>
+          <rect x="58" y="12" width="14" height="10" rx="2" fill="rgba(0,0,0,0.25)"/>
+          <circle cx="25" cy="37" r="6" fill="rgba(255,255,255,0.75)"/>
+          <circle cx="60" cy="37" r="6" fill="rgba(255,255,255,0.75)"/>
+          <circle cx="90" cy="37" r="6" fill="rgba(255,255,255,0.75)"/>
+        </svg>
+        <svg class="dep-speed-line" style="position:absolute;bottom:18px;left:0" width="80" height="20" viewBox="0 0 80 20">
+          <line x1="0" y1="6"  x2="70" y2="6"  stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="0" y1="12" x2="55" y2="12" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="0" y1="18" x2="70" y2="18" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- ══ ÉCRAN PRÉ-DÉPART ══ -->
+    <div id="predep-screen">
+      <div class="pd-header">
+        <div class="pd-badge" id="pd-badge">SNCF</div>
+        <span class="pd-train" id="pd-train">TGV 6201</span>
+      </div>
+      <div class="pd-route">
+        <span class="pd-city" id="pd-origin">—</span>
+        <span class="pd-arrow">→</span>
+        <span class="pd-city" id="pd-dest">—</span>
+      </div>
+      <div class="pd-waiting">
+        <div class="hourglass">
+          <div class="hg-top"></div>
+          <div class="hg-bot"></div>
+          <div class="hg-sand-top"></div>
+          <div class="hg-stream"></div>
+          <div class="hg-sand-bot"></div>
+        </div>
+        <span class="pd-wait-label">En attente du départ</span>
+      </div>
+      <div class="pd-stops-ticker">
+        <span class="pd-stops-ticker-inner" id="pd-stops-ticker">—</span>
+      </div>
+    </div>
+
+      <div class="ph-header">
+        <div class="operator-badge" id="op-badge">SNCF</div>
+        <span class="train-number" id="train-number">TGV 6201</span>
+        <div class="eta-badge">
+          <span class="eta-label">Arrivée terminus</span>
+          <span class="eta-time" id="eta-time">14h32</span>
+        </div>
+      </div>
+      <div class="ph-route">
+        <span class="route-city" id="route-origin">Paris Gare de Lyon</span>
+        <span class="route-arrow">→</span>
+        <span class="route-dest" id="route-dest">Marseille-Saint-Charles</span>
+      </div>
+      <div class="ph-stops-label">Arrêts</div>
+      <div class="stops-track" id="stops-track">
+        <div class="train-icon" id="train-icon">🚄</div>
+      </div>
+      <div class="next-stop-banner" id="next-banner" style="display:none">
+        <span class="nsb-label">Prochain arrêt</span>
+        <span class="nsb-arrows"><span class="arr">›</span><span class="arr">›</span><span class="arr">›</span></span>
+        <span class="nsb-name" id="next-stop-name">—</span>
+      </div>
+      <div id="terminus-banner">
+        <span class="tb-label">Terminus</span>
+        <div class="tb-sep"></div>
+        <div class="tb-scroll-wrap" id="tb-wrap">
+          <span id="tb-text" style="position:absolute;top:50%;transform:translateY(-50%);left:0;display:inline-block;white-space:nowrap;font-size:14px;font-weight:800;color:#fff;">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     BUS PANEL
+══════════════════════════════════════ -->
+<div id="bus-panel" style="display:none">
+  <div class="panel-glass">
+    <div class="panel-body">
+
+    <!-- ── No Service bus ── -->
+    <div id="bus-no-service-screen">
+      <div style="position:relative;display:inline-block;">
+        <svg width="104" height="38" viewBox="0 0 104 38" style="opacity:.35;">
+          <rect x="2" y="3" width="96" height="28" rx="7" fill="rgba(255,255,255,0.8)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+          <rect x="8"  y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.18)"/>
+          <rect x="28" y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.18)"/>
+          <rect x="48" y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.18)"/>
+          <rect x="68" y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.18)"/>
+          <rect x="3"  y="19" width="11" height="12" rx="2" fill="rgba(0,0,0,0.1)"/>
+          <circle cx="18" cy="34" r="4" fill="rgba(255,255,255,0.6)"/>
+          <circle cx="52" cy="34" r="4" fill="rgba(255,255,255,0.6)"/>
+          <circle cx="88" cy="34" r="4" fill="rgba(255,255,255,0.6)"/>
+        </svg>
+        <div class="ns-redline"></div>
+      </div>
+      <span class="ns-title">No Service</span>
+      <span class="ns-countdown" id="bus-ns-countdown">Veille dans 10s</span>
+    </div>
+
+    <!-- ── Fin de service bus ── -->
+    <div id="bus-fin-screen">
+      <span class="fin-terminus">TERMINUS</span>
+      <div class="fin-divider"></div>
+      <span class="fin-service">Fin de service</span>
+      <span class="fin-info" id="bus-fin-info">—</span>
+      <div class="unload-wrap">
+        <svg class="unload-train" width="66" height="52" viewBox="0 0 66 52">
+          <rect x="0" y="4" width="62" height="36" rx="7" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <rect x="4"  y="8"  width="11" height="9" rx="2" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <rect x="20" y="8"  width="11" height="9" rx="2" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <rect x="36" y="8"  width="11" height="9" rx="2" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <rect x="2" y="19" width="12" height="21" rx="2" fill="rgba(255,255,255,0.06)" stroke="rgba(0,200,83,0.5)" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <circle cx="14" cy="44" r="5" fill="rgba(255,255,255,0.15)"/>
+          <circle cx="48" cy="44" r="5" fill="rgba(255,255,255,0.15)"/>
+        </svg>
+        <svg class="unload-person" width="18" height="40" viewBox="0 0 18 40"><circle cx="9" cy="4.5" r="4.5" fill="rgba(255,255,255,0.85)"/><line x1="9" y1="9" x2="9" y2="24" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round"/><line class="ul-arm-l" x1="6" y1="13" x2="1" y2="20" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"/><line class="ul-arm-r" x1="9" y1="13" x2="15" y2="20" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"/><line class="ul-leg-l" x1="6" y1="24" x2="2" y2="36" stroke="rgba(255,255,255,0.85)" stroke-width="2" stroke-linecap="round"/><line class="ul-leg-r" x1="9" y1="24" x2="14" y2="36" stroke="rgba(255,255,255,0.85)" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="unload-person" width="18" height="40" viewBox="0 0 18 40"><circle cx="9" cy="4.5" r="4.5" fill="rgba(255,255,255,0.65)"/><line x1="9" y1="9" x2="9" y2="24" stroke="rgba(255,255,255,0.65)" stroke-width="2.2" stroke-linecap="round"/><line class="ul-arm-l" x1="6" y1="13" x2="1" y2="20" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"/><line class="ul-arm-r" x1="9" y1="13" x2="15" y2="20" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"/><line class="ul-leg-l" x1="6" y1="24" x2="2" y2="36" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round"/><line class="ul-leg-r" x1="9" y1="24" x2="14" y2="36" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="unload-person" width="18" height="40" viewBox="0 0 18 40"><circle cx="9" cy="4.5" r="4.5" fill="rgba(255,255,255,0.45)"/><line x1="9" y1="9" x2="9" y2="24" stroke="rgba(255,255,255,0.45)" stroke-width="2.2" stroke-linecap="round"/><line class="ul-arm-l" x1="6" y1="13" x2="1" y2="20" stroke="rgba(255,255,255,0.45)" stroke-width="1.8" stroke-linecap="round"/><line class="ul-arm-r" x1="9" y1="13" x2="15" y2="20" stroke="rgba(255,255,255,0.45)" stroke-width="1.8" stroke-linecap="round"/><line class="ul-leg-l" x1="6" y1="24" x2="2" y2="36" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round"/><line class="ul-leg-r" x1="9" y1="24" x2="14" y2="36" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <!-- ── PAX bus ── -->
+    <div id="bus-pax-screen">
+      <span class="pax-station" id="bus-pax-station-name">—</span>
+      <div class="pax-status-badge boarding" id="bus-pax-badge">
+        <span class="pax-status-dot"></span>
+        <span id="bus-pax-badge-text">Embarquement en cours</span>
+      </div>
+      <!-- Embarquement -->
+      <div id="bus-svg-boarding">
+        <svg class="walk-person" width="22" height="48" viewBox="0 0 22 48">
+          <circle cx="11" cy="5" r="5" fill="#fff"/>
+          <line x1="11" y1="10" x2="11" y2="28" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          <line class="walk-arm-l" x1="7" y1="14" x2="2" y2="23" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <line class="walk-arm-r" x1="11" y1="14" x2="18" y2="23" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <line class="walk-leg-l" x1="7" y1="28" x2="3" y2="42" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+          <line class="walk-leg-r" x1="11" y1="28" x2="16" y2="42" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <svg style="position:absolute;right:8px;bottom:0" width="78" height="54" viewBox="0 0 78 54">
+          <rect x="0" y="2" width="74" height="42" rx="7" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <rect x="4"  y="6" width="12" height="9" rx="2" fill="rgba(255,255,255,0.08)"/>
+          <rect x="22" y="6" width="12" height="9" rx="2" fill="rgba(255,255,255,0.08)"/>
+          <rect x="40" y="6" width="12" height="9" rx="2" fill="rgba(255,255,255,0.08)"/>
+          <rect class="door-panel" x="2" y="18" width="13" height="26" rx="2" fill="rgba(255,255,255,0.08)" stroke="rgba(0,180,255,0.5)" stroke-width="1.2"/>
+          <circle cx="14" cy="48" r="4" fill="rgba(255,255,255,0.15)"/>
+          <circle cx="58" cy="48" r="4" fill="rgba(255,255,255,0.15)"/>
+        </svg>
+      </div>
+      <!-- Fin embarquement -->
+      <div id="bus-svg-closing">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="10" r="7" fill="none" stroke="#ff3c3c" stroke-width="2.5"/>
+          <line x1="32" y1="17" x2="32" y2="36" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="20" y1="25" x2="44" y2="25" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="32" y1="36" x2="22" y2="54" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="32" y1="36" x2="42" y2="54" stroke="#ff3c3c" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="29" fill="none" stroke="#ff3c3c" stroke-width="3"/>
+          <line x1="8" y1="8" x2="56" y2="56" stroke="#ff3c3c" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <!-- Départ bus -->
+      <div id="bus-svg-departing">
+        <svg class="dep-bus-anim" style="position:absolute;bottom:4px;" width="118" height="46" viewBox="0 0 118 46">
+          <rect x="0" y="3" width="114" height="34" rx="7" fill="rgba(255,255,255,0.88)"/>
+          <rect x="4"  y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.2)"/>
+          <rect x="24" y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.2)"/>
+          <rect x="44" y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.2)"/>
+          <rect x="64" y="7" width="13" height="9" rx="2" fill="rgba(0,0,0,0.2)"/>
+          <circle cx="18"  cy="41" r="5" fill="rgba(255,255,255,0.7)"/>
+          <circle cx="86"  cy="41" r="5" fill="rgba(255,255,255,0.7)"/>
+        </svg>
+        <svg style="position:absolute;bottom:18px;left:0" width="80" height="20" viewBox="0 0 80 20">
+          <line class="dep-speed-line" x1="0" y1="6"  x2="70" y2="6"  stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+          <line class="dep-speed-line" x1="0" y1="12" x2="55" y2="12" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round" style="animation-delay:.1s"/>
+          <line class="dep-speed-line" x1="0" y1="18" x2="65" y2="18" stroke="rgba(255,255,255,0.25)" stroke-width="1.8" stroke-linecap="round" style="animation-delay:.2s"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ── Pré-départ bus ── -->
+    <div id="bus-predep-screen">
+      <div class="pd-header">
+        <div class="pd-badge" id="bus-pd-badge">
+          <span id="bus-pd-line-num">—</span>
+        </div>
+        <div style="min-width:0;flex:1;">
+          <span class="pd-train" id="bus-pd-line">Ligne</span>
+          <span class="bus-operator-sub" id="bus-pd-operator">—</span>
+        </div>
+      </div>
+      <div class="pd-route">
+        <span class="pd-city" id="bus-pd-origin">—</span>
+        <span class="pd-arrow">→</span>
+        <span class="pd-city" id="bus-pd-dest">—</span>
+      </div>
+      <div class="pd-waiting" style="gap:12px;">
+        <div class="bus-hazard-wrap">
+          <div class="haz-l"></div>
+          <svg width="80" height="46" viewBox="0 0 80 46">
+            <rect x="0" y="3" width="76" height="34" rx="7" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+            <rect x="4"  y="7" width="12" height="8" rx="2" fill="rgba(255,255,255,0.08)"/>
+            <rect x="22" y="7" width="12" height="8" rx="2" fill="rgba(255,255,255,0.08)"/>
+            <rect x="40" y="7" width="12" height="8" rx="2" fill="rgba(255,255,255,0.08)"/>
+            <rect x="3"  y="17" width="10" height="20" rx="2" fill="rgba(255,255,255,0.06)" stroke="rgba(255,200,80,0.25)" stroke-width="1"/>
+            <circle cx="14" cy="42" r="4" fill="rgba(255,255,255,0.15)"/>
+            <circle cx="58" cy="42" r="4" fill="rgba(255,255,255,0.15)"/>
+          </svg>
+          <div class="haz-r"></div>
+        </div>
+        <div class="pd-pax-queue">
+          <svg class="pd-pax-sil" width="14" height="34" viewBox="0 0 14 34"><circle cx="7" cy="4" r="4" fill="rgba(255,255,255,0.55)"/><line x1="7" y1="8" x2="7" y2="22" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="0" y2="18" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="12" x2="11" y2="18" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="22" x2="1" y2="32" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"/><line x1="7" y1="22" x2="11" y2="32" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg class="pd-pax-sil" width="14" height="34" viewBox="0 0 14 34"><circle cx="7" cy="4" r="4" fill="rgba(255,255,255,0.38)"/><line x1="7" y1="8" x2="7" y2="22" stroke="rgba(255,255,255,0.38)" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="0" y2="18" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="12" x2="11" y2="18" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="22" x2="1" y2="32" stroke="rgba(255,255,255,0.38)" stroke-width="1.8" stroke-linecap="round"/><line x1="7" y1="22" x2="11" y2="32" stroke="rgba(255,255,255,0.38)" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg class="pd-pax-sil" width="14" height="34" viewBox="0 0 14 34"><circle cx="7" cy="4" r="4" fill="rgba(255,255,255,0.22)"/><line x1="7" y1="8" x2="7" y2="22" stroke="rgba(255,255,255,0.22)" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="0" y2="18" stroke="rgba(255,255,255,0.22)" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="12" x2="11" y2="18" stroke="rgba(255,255,255,0.22)" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="22" x2="1" y2="32" stroke="rgba(255,255,255,0.22)" stroke-width="1.8" stroke-linecap="round"/><line x1="7" y1="22" x2="11" y2="32" stroke="rgba(255,255,255,0.22)" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <span class="pd-wait-label">En attente du départ</span>
+      </div>
+      <div class="pd-stops-ticker">
+        <span class="pd-stops-ticker-inner" id="bus-pd-ticker">—</span>
+      </div>
+    </div>
+
+    <!-- ── Mode voyage bus ── -->
+    <div class="ph-header" id="bus-ph-header">
+      <div class="operator-badge" id="bus-op-badge">
+        <span id="bus-op-line-num">—</span>
+      </div>
+      <div style="min-width:0;flex:1;">
+        <span class="train-number" id="bus-line-number">Ligne</span>
+        <span class="bus-operator-sub" id="bus-operator-sub">—</span>
+      </div>
+      <div class="eta-badge">
+        <span class="eta-label">Terminus</span>
+        <span class="eta-time" id="bus-eta-time">—</span>
+      </div>
+    </div>
+    <div class="ph-route" id="bus-ph-route">
+      <span class="route-city" id="bus-route-origin">—</span>
+      <span class="route-arrow">→</span>
+      <span class="route-dest" id="bus-route-dest">—</span>
+    </div>
+    <div class="ph-stops-label" id="bus-ph-stops-label">Arrêts</div>
+    <div class="stops-track" id="bus-stops-track">
+      <div id="bus-icon">🚌</div>
+    </div>
+    <div class="next-stop-banner" id="bus-next-banner" style="display:none">
+      <span class="nsb-label">Prochain arrêt</span>
+      <span class="nsb-arrows"><span class="arr">›</span><span class="arr">›</span><span class="arr">›</span></span>
+      <span class="nsb-name" id="bus-next-stop-name">—</span>
+    </div>
+    <div id="bus-terminus-banner">
+      <span class="tb-label">Terminus</span>
+      <div class="tb-sep"></div>
+      <div class="tb-scroll-wrap" id="bus-tb-wrap">
+        <span id="bus-tb-text" style="position:absolute;top:50%;transform:translateY(-50%);left:0;display:inline-block;white-space:nowrap;font-size:14px;font-weight:800;color:#fff;">—</span>
+      </div>
+    </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Pastille attente service (hors panel) -->
+<div id="idle-pill">
+  <div class="idle-dot"></div>
+  <div class="idle-ticker-wrap">
+    <span class="idle-ticker-text">Attente service &nbsp;•&nbsp; Attente service &nbsp;•&nbsp; Attente service</span>
+  </div>
+</div>
+
+<!-- ══ SHUTDOWN SEQUENCE ══ -->
+<div id="shutdown-pill">
+  <div class="shutdown-dot"></div>
+  <span class="shutdown-compact-text">fermeture<span class="boot-dots-anim">...</span></span>
+  <div class="shutdown-expanded-content">
+    <svg class="shutdown-power-svg" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="20" stroke="rgba(255,80,80,0.15)" stroke-width="2"/>
+      <path class="shutdown-power-ring" d="M14 10.5 A17 17 0 1 0 34 10.5" stroke="rgba(255,100,100,0.9)" stroke-width="2.5" stroke-linecap="round"/>
+      <line class="shutdown-power-line" x1="24" y1="6" x2="24" y2="24" stroke="rgba(255,100,100,0.9)" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span class="shutdown-label">Déconnexion</span>
+    <span class="shutdown-countdown" id="shutdown-count">5</span>
+    <span class="shutdown-sub">Fermeture dans</span>
+  </div>
+</div>
+
+<!-- ══ BOOT SEQUENCE ══ -->
+<div id="boot-pill">
+  <div class="boot-dot"></div>
+  <span class="boot-starting">starting<span class="boot-dots-anim">...</span></span>
+  <div class="boot-expanded-content">
+    <svg class="boot-power-svg" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+      <path class="boot-power-ring" d="M14 10.5 A17 17 0 1 0 34 10.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      <line class="boot-power-line" x1="24" y1="6" x2="24" y2="24" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div class="boot-steps">
+      <span class="boot-step" id="bstep-0">Initialisation</span>
+      <span class="boot-step" id="bstep-1">Connexion</span>
+      <span class="boot-step" id="bstep-2">Lancement</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODE SWITCH ══ -->
+<div id="mode-switch-pill">
+  <div class="ms-compact">
+    <div class="ms-dot"></div>
+    <span class="ms-compact-text">changement de mode<span class="boot-dots-anim">...</span></span>
+  </div>
+  <div class="ms-expanded">
+    <div class="ms-header">
+      <span class="ms-icon" id="ms-icon">🚌</span>
+      <div>
+        <div class="ms-title" id="ms-title">Passage en mode Bus</div>
+        <div class="ms-sub">Chargement de l'overlay</div>
+      </div>
+    </div>
+    <div class="ms-bar-wrap"><div class="ms-bar-fill" id="ms-bar"></div></div>
+  </div>
+</div>
+
+<script>
+const OPERATOR_COLORS = {
+  'SNCF': { bg:'#c00',    fg:'#fff' },
+  'DB':   { bg:'#f01414', fg:'#fff' },
+  'OBB':  { bg:'#e2001a', fg:'#fff' },
+  'CD':   { bg:'#003c8f', fg:'#fff' },
+  // ── Bus ──
+  'RATP':      { bg:'#009aa6', fg:'#fff' },
+  'Keolis':    { bg:'#009A3E', fg:'#fff' },
+  'Transdev':  { bg:'#003C8F', fg:'#fff' },
+  'FlixBus':   { bg:'#72C24B', fg:'#000' },
+  'BlaBlaBus': { bg:'#00BEF2', fg:'#000' },
+  'Ouibus':    { bg:'#FF7900', fg:'#fff' },
+  'TEC':       { bg:'#E4002B', fg:'#fff' },
+  'De Lijn':   { bg:'#E3002B', fg:'#fff' },
+  'STIB':      { bg:'#0059B3', fg:'#fff' },
+};
+
+
+// ═══════════════════════════════════════
+//  POWER ON / OFF
+// ═══════════════════════════════════════
+let _isPowered = false;
+let _currentOverlayMode = null; // 'train' | 'bus' | null
+
+// ─── Mode Switch Animation ───────────────────────────────
+let _msSwitchTimer = null;
+function showModeSwitchAnim(toMode, fromMode, callback) {
+  if (_msSwitchTimer) { clearTimeout(_msSwitchTimer); _msSwitchTimer = null; }
+
+  const pill  = document.getElementById('mode-switch-pill');
+  const icon  = document.getElementById('ms-icon');
+  const title = document.getElementById('ms-title');
+  const bar   = document.getElementById('ms-bar');
+
+  icon.textContent  = toMode === 'bus' ? '🚌' : '🚂';
+  title.textContent = toMode === 'bus' ? 'Passage en mode Bus' : 'Passage en mode Train';
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+
+  // Phase 0 : Collapse le panel actuel (FROM)
+  const fromPanel = document.getElementById(fromMode === 'bus' ? 'bus-panel' : 'train-panel');
+  if (fromPanel && fromPanel.style.display !== 'none') {
+    fromPanel.classList.add('collapsing');
+    setTimeout(() => {
+      fromPanel.style.display = 'none';
+      fromPanel.classList.remove('collapsing', 'visible');
+    }, 600);
+  }
+  // Cacher aussi les autres pastilles pour qu'elles ne chevauchent pas
+  document.getElementById('idle-pill').classList.remove('show');
+  stopIdleCycle();
+
+  // Phase 1 : Pill compacte qui apparaît (pendant le collapse)
+  pill.classList.remove('hide', 'expanded');
+  pill.classList.add('show');
+
+  // Phase 2 : Expansion après 550ms (le panel est bien caché à ce moment)
+  _msSwitchTimer = setTimeout(() => {
+    pill.classList.add('expanded');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bar.style.transition = 'width 1.6s cubic-bezier(.4,0,.6,1)';
+        bar.style.width = '100%';
+      });
+    });
+
+    // Phase 3 : barre pleine → on peut appliquer le nouveau state (nouveau panel s'ouvre)
+    _msSwitchTimer = setTimeout(() => {
+      callback();
+
+      // Phase 4 : Réduire la pill puis la cacher
+      _msSwitchTimer = setTimeout(() => {
+        pill.classList.remove('expanded');
+        pill.classList.add('hide');
+        _msSwitchTimer = setTimeout(() => {
+          pill.classList.remove('show', 'hide');
+          _msSwitchTimer = null;
+        }, 500);
+      }, 400);
+    }, 1800);
+  }, 550);
+}
+
+
+
+function powerOff() {
+  if (!_isPowered) return;
+  _isPowered = false;
+
+  // Cacher idle-pill et panel immédiatement
+  const panel = document.getElementById('train-panel');
+  const idlePill = document.getElementById('idle-pill');
+  stopIdleCycle();
+  clearNoServiceTimer();
+  idlePill.classList.remove('show');
+  // Collapse le panel actif (train ou bus)
+  const bPanel = document.getElementById('bus-panel');
+  if (bPanel && bPanel.style.display !== 'none') {
+    bPanel.classList.add('collapsing');
+    setTimeout(() => { bPanel.style.display='none'; bPanel.classList.remove('collapsing','visible'); }, 650);
+  }
+  panel.classList.add('collapsing');
+  setTimeout(() => {
+    panel.style.display = 'none';
+    panel.classList.remove('collapsing', 'visible');
+    // Lancer la séquence shutdown seulement après que le panel a disparu
+    runShutdownSequence();
+  }, 650);
+}
+
+let _shutdownInterval = null;
+
+function runShutdownSequence() {
+  const pill      = document.getElementById('shutdown-pill');
+  const countEl   = document.getElementById('shutdown-count');
+
+  // Reset
+  clearInterval(_shutdownInterval);
+  pill.classList.remove('expanded','compact','fadeout','hide');
+  pill.classList.add('show');
+
+  // Phase 1 : petite bulle "fermeture..." — 1.2s
+  setTimeout(() => {
+    pill.classList.add('expanded');
+
+    // Compte à rebours de 5 → 0
+    let count = 5;
+    countEl.textContent = count;
+
+    _shutdownInterval = setInterval(() => {
+      count--;
+      countEl.textContent = count;
+      // Tick animation
+      countEl.classList.add('tick');
+      setTimeout(() => countEl.classList.remove('tick'), 200);
+
+      if (count <= 0) {
+        clearInterval(_shutdownInterval);
+
+        // Repasser en bulle compacte
+        setTimeout(() => {
+          pill.classList.remove('expanded');
+          pill.classList.add('compact');
+
+          // Fade out après 3s
+          setTimeout(() => {
+            pill.classList.add('fadeout');
+            setTimeout(() => {
+              pill.classList.remove('show','compact','fadeout');
+            }, 820);
+          }, 3000);
+        }, 400);
+      }
+    }, 1000);
+  }, 1200);
+}
+
+function powerOn() {
+  if (_isPowered) return;
+  _isPowered = true;
+  runBootSequence();
+}
+
+function runBootSequence() {
+  const pill  = document.getElementById('boot-pill');
+  const steps = ['bstep-0','bstep-1','bstep-2'];
+
+  // Reset
+  pill.classList.remove('expanded','hide');
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+  });
+  pill.classList.add('show');
+
+  // Phase 1 : "starting..." (bulle compacte) — 2s
+  setTimeout(() => {
+    // Phase 2 : expansion
+    pill.classList.add('expanded');
+
+    // Étape 0 : Initialisation — t=2.3s
+    setTimeout(() => {
+      document.getElementById('bstep-0').classList.add('active');
+    }, 300);
+
+    // Étape 0 → done, Étape 1 active — t=4s
+    setTimeout(() => {
+      document.getElementById('bstep-0').classList.remove('active');
+      document.getElementById('bstep-0').classList.add('done');
+      document.getElementById('bstep-1').classList.add('active');
+    }, 1800);
+
+    // Étape 1 → done, Étape 2 active — t=5.5s
+    setTimeout(() => {
+      document.getElementById('bstep-1').classList.remove('active');
+      document.getElementById('bstep-1').classList.add('done');
+      document.getElementById('bstep-2').classList.add('active');
+    }, 3200);
+
+    // Étape 2 → done — t=7s
+    setTimeout(() => {
+      document.getElementById('bstep-2').classList.remove('active');
+      document.getElementById('bstep-2').classList.add('done');
+    }, 4600);
+
+    // Disparition de la bulle — t=7.5s
+    setTimeout(() => {
+      pill.classList.add('hide');
+      setTimeout(() => {
+        pill.classList.remove('show','expanded','hide');
+        steps.forEach(id => {
+          const el = document.getElementById(id);
+          el.classList.remove('active','done');
+        });
+        // Fetch state et décider quoi afficher
+        fetch('http://localhost:3000/api/state')
+          .then(r => r.json())
+          .then(state => {
+            const hasStops = state.stops && state.stops.length > 0;
+            if (!hasStops) {
+              // Aucun arrêt → veille
+              document.getElementById('idle-pill').classList.add('show');
+              startIdleCycle();
+            } else {
+              // Des arrêts → forcer pré-départ
+              state.departed = false;
+              state.fin = false;
+              state.pax = false;
+              applyState(state);
+            }
+          })
+          .catch(() => {
+            // Serveur injoignable → veille
+            document.getElementById('idle-pill').classList.add('show');
+            startIdleCycle();
+          });
+      }, 520);
+    }, 5400);
+
+  }, 2000);
+}
+
+function applyState(state) {
+  // ── Bus mode routing ──
+  if (state.mode === 'bus') {
+    // Switch train→bus détecté ?
+    if (_isPowered && _currentOverlayMode === 'train') {
+      showModeSwitchAnim('bus', 'train', () => {
+        _currentOverlayMode = 'bus';
+        applyBusState(state);
+      });
+      return;
+    }
+    _currentOverlayMode = 'bus';
+    applyBusState(state);
+    return;
+  }
+  // Switch bus→train détecté ?
+  if (_isPowered && _currentOverlayMode === 'bus') {
+    showModeSwitchAnim('train', 'bus', () => {
+      _currentOverlayMode = 'train';
+      _applyTrainState(state);
+    });
+    return;
+  }
+  _currentOverlayMode = 'train';
+  _applyTrainState(state);
+}
+
+function _applyTrainState(state) {
+  // Cacher bus panel si visible
+  const _bpanel = document.getElementById('bus-panel');
+  if (_bpanel && _bpanel.style.display !== 'none') { _bpanel.classList.remove('visible'); _bpanel.style.display = 'none'; }
+  // ── Gestion power ──
+  if (state.power === false) {
+    powerOff();
+    return;
+  } else if (state.power === true) {
+    powerOn();
+  }
+  // ── Remettre le panel si caché (après fin/no-service) ──
+  const panel = document.getElementById('train-panel');
+  if (panel.style.display === 'none') {
+    panel.style.display = '';
+    panel.classList.remove('collapsing');
+    panel.classList.remove('visible');
+    void panel.offsetWidth;
+    panel.classList.add('visible');
+  }
+
+  // ── Reset global : cacher tous les écrans spéciaux ──
+  document.getElementById('idle-pill').classList.remove('show');
+  stopIdleCycle();
+  clearNoServiceTimer();
+  document.getElementById('no-service-screen').classList.remove('show');
+  document.getElementById('fin-screen').classList.remove('show');
+  document.getElementById('pax-screen').classList.remove('show');
+  document.getElementById('predep-screen').classList.remove('show');
+
+  // ── NO SERVICE (aucun arrêt) ──
+  const isEmpty = !state.stops || state.stops.length === 0;
+  if (isEmpty) {
+    showNoService();
+    return;
+  }
+
+  // ── FIN DE SERVICE ──
+  if (state.fin) {
+    showFinScreen(state);
+    return;
+  }
+
+  // ── PAX MODE ──
+  if (state.pax) {
+    showPaxScreen(state);
+    return;
+  }
+
+  // Reset pax si actif
+  if (_paxActive) {
+    _paxActive = false;
+    document.getElementById('svg-boarding').classList.remove('show');
+    document.getElementById('svg-closing').classList.remove('show');
+    document.getElementById('svg-departing').classList.remove('show');
+  }
+
+  const predep = document.getElementById('predep-screen');
+
+  if (!state.departed) {
+    // ── MODE PRÉ-DÉPART ──
+    // Cacher les éléments du mode voyage
+    document.getElementById('next-banner').style.display    = 'none';
+    document.getElementById('terminus-banner').classList.remove('show');
+    document.querySelector('.ph-header').style.display      = 'none';
+    document.querySelector('.ph-route').style.display       = 'none';
+    document.querySelector('.ph-stops-label').style.display = 'none';
+    document.getElementById('stops-track').style.display    = 'none';
+    stopTerminusScroll();
+
+    // Remplir les infos pré-départ
+    const op = OPERATOR_COLORS[state.operator] || { bg:'#555', fg:'#fff' };
+    document.getElementById('pd-badge').textContent      = state.operator;
+    document.getElementById('pd-badge').style.background = op.bg;
+    document.getElementById('pd-badge').style.color      = op.fg;
+    document.getElementById('pd-train').textContent      = state.trainNumber;
+    document.getElementById('pd-origin').textContent     = state.origin;
+    document.getElementById('pd-dest').textContent       = state.terminus;
+
+    // Ticker arrêts
+    const names = (state.stops || []).map(s => s.name).join('  •  ');
+    document.getElementById('pd-stops-ticker').textContent = names + '  •  ' + names;
+
+    predep.classList.add('show');
+    return;
+  }
+
+  // ── MODE VOYAGE : afficher les éléments voyage ──
+  document.querySelector('.ph-header').style.display      = '';
+  document.querySelector('.ph-route').style.display       = '';
+  document.querySelector('.ph-stops-label').style.display = '';
+  document.getElementById('stops-track').style.display    = '';
+
+  const op = OPERATOR_COLORS[state.operator] || { bg:'#555', fg:'#fff' };
+  document.getElementById('op-badge').textContent      = state.operator;
+  document.getElementById('op-badge').style.background = op.bg;
+  document.getElementById('op-badge').style.color      = op.fg;
+  document.getElementById('train-number').textContent  = state.trainNumber;
+  document.getElementById('eta-time').textContent      = state.eta;
+  document.getElementById('route-origin').textContent  = state.origin;
+  document.getElementById('route-dest').textContent    = state.terminus;
+
+  const track = document.getElementById('stops-track');
+  const icon  = document.getElementById('train-icon');
+  track.innerHTML = '';
+  track.appendChild(icon);
+
+  const currentIdx  = state.stops.findIndex(s => s.status === 'current');
+  const nextIdx     = state.stops.findIndex((s,i) => i > currentIdx && s.status === 'upcoming');
+  const terminusIdx = state.stops.length - 1;
+  const isTerminus  = currentIdx === terminusIdx;
+
+  state.stops.forEach((stop, i) => {
+    const div   = document.createElement('div');
+    let cls = 'stop-item ' + stop.status;
+    if (i === nextIdx) cls += ' next-stop';
+    div.className = cls;
+    div.innerHTML = `<div class="stop-dot"></div><span class="stop-name">${stop.name}</span>`;
+    track.appendChild(div);
+  });
+
+  // Positionner icône train
+  if (currentIdx >= 0) {
+    const items = track.querySelectorAll('.stop-item');
+    const item  = items[currentIdx];
+    icon.style.top = (item.offsetTop + 2) + 'px';
+  }
+
+  // Bannières
+  const nextBanner  = document.getElementById('next-banner');
+  const termBanner  = document.getElementById('terminus-banner');
+  const tbText      = document.getElementById('tb-text');
+
+  if (isTerminus) {
+    startTerminusScroll(state.stops[terminusIdx].name);
+    termBanner.classList.add('show');
+    nextBanner.style.display = 'none';
+  } else {
+    stopTerminusScroll();
+    termBanner.classList.remove('show');
+    if (nextIdx >= 0) {
+      nextBanner.style.display = 'flex';
+      document.getElementById('next-stop-name').textContent = state.stops[nextIdx].name;
+    } else {
+      nextBanner.style.display = 'none';
+    }
+  }
+}
+
+const ws = new WebSocket('ws://localhost:3000');
+ws.onmessage = e => {
+  const data = JSON.parse(e.data);
+  if ('power' in data && Object.keys(data).length === 1) {
+    if (data.power === true  && !_isPowered) { powerOn();  return; }
+    if (data.power === false &&  _isPowered) { powerOff(); return; }
+    return; // déjà dans le bon état, on ignore
+  }
+  applyState(data);
+};
+ws.onerror   = () => console.warn('WS non connecté');
+
+// Le state est chargé uniquement si l'overlay est allumé (géré via WS + powerOn)
+
+let _tTimer = null;
+let _tRAF   = null;
+let _tPhase = 0;  // 0 = NOM-TERMINUS fixe/scroll, 1 = Assurez-vous scroll
+
+function stopTerminusScroll() {
+  if (_tTimer) { clearTimeout(_tTimer); _tTimer = null; }
+  if (_tRAF)   { cancelAnimationFrame(_tRAF); _tRAF = null; }
+}
+
+function startTerminusScroll(name) {
+  stopTerminusScroll();
+  _tPhase = 0;
+  runPhase(name);
+}
+
+function runPhase(name) {
+  const tb   = document.getElementById('tb-text');
+  const wrap = document.getElementById('tb-wrap');
+
+  if (_tPhase === 0) {
+    // Phase 0 : "NOM — TERMINUS"
+    tb.textContent = name + '  —  TERMINUS';
+    tb.style.left  = '0px';
+
+    _tRAF = requestAnimationFrame(() => {
+      const W = wrap.offsetWidth;
+      const T = tb.offsetWidth;
+
+      if (T <= W) {
+        // Texte court : fixe 3 secondes
+        _tTimer = setTimeout(() => { _tPhase = 1; runPhase(name); }, 3000);
+      } else {
+        // Texte long : défile de droite à gauche une fois
+        scrollText(tb, wrap, W, T, () => {
+          _tPhase = 1;
+          _tTimer = setTimeout(() => runPhase(name), 500);
+        });
+      }
+    });
+
+  } else {
+    // Phase 1 : "Assurez-vous de ne rien oublier dans le train"
+    tb.textContent = 'Assurez-vous de ne rien oublier dans le train';
+    tb.style.left  = '0px';
+
+    _tRAF = requestAnimationFrame(() => {
+      const W = wrap.offsetWidth;
+      const T = tb.offsetWidth;
+      // Toujours défilant
+      scrollText(tb, wrap, W, T, () => {
+        _tPhase = 0;
+        _tTimer = setTimeout(() => runPhase(name), 500);
+      });
+    });
+  }
+}
+
+function scrollText(tb, wrap, W, T, cb) {
+  let x    = W;
+  let prev = null;
+  const speed = 80; // px/s
+
+  tb.style.left = x + 'px';
+
+  function step(ts) {
+    if (prev === null) prev = ts;
+    x -= speed * (ts - prev) / 1000;
+    prev = ts;
+    tb.style.left = x + 'px';
+    if (x > -T) {
+      _tRAF = requestAnimationFrame(step);
+    } else {
+      _tRAF = null;
+      cb();
+    }
+  }
+  _tRAF = requestAnimationFrame(step);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'F8') document.getElementById('train-panel').classList.toggle('visible');
+});
+
+// ══════════════════════════════════════
+// PAX
+// ══════════════════════════════════════
+let _paxActive  = false;
+let _paxCurState = null;
+
+function showPaxScreen(state) {
+  _paxActive   = true;
+  _paxCurState = state;
+
+  // Cacher tout le reste
+  document.getElementById('predep-screen').classList.remove('show');
+  document.querySelector('.ph-header').style.display      = 'none';
+  document.querySelector('.ph-route').style.display       = 'none';
+  document.querySelector('.ph-stops-label').style.display = 'none';
+  document.getElementById('stops-track').style.display    = 'none';
+  document.getElementById('next-banner').style.display    = 'none';
+  document.getElementById('terminus-banner').classList.remove('show');
+  stopTerminusScroll();
+
+  // Nom gare courante
+  const curIdx = (state.stops || []).findIndex(s => s.status === 'current');
+  const name   = curIdx >= 0 ? state.stops[curIdx].name : (state.origin || '—');
+  document.getElementById('pax-station-name').textContent = name;
+
+  // Reset badge + animations
+  setBadge('boarding');
+  document.getElementById('svg-boarding').classList.add('show');
+  document.getElementById('svg-closing').classList.remove('show');
+  document.getElementById('svg-departing').classList.remove('show');
+
+  document.getElementById('pax-screen').classList.add('show');
+}
+
+function hidePaxScreen() {
+  if (!_paxActive) return;
+
+  const badge    = document.getElementById('pax-badge');
+  const boarding = document.getElementById('svg-boarding');
+  const closing  = document.getElementById('svg-closing');
+  const departing= document.getElementById('svg-departing');
+
+  // Phase 1 : FIN D'EMBARQUEMENT (2s)
+  setBadge('closing');
+  boarding.classList.remove('show');
+  closing.classList.add('show');
+
+  setTimeout(() => {
+    // Phase 2 : DÉPART EN COURS (2s)
+    setBadge('departing');
+    closing.classList.remove('show');
+    departing.classList.add('show');
+
+    setTimeout(() => {
+      // Phase 3 : retour affichage normal
+      _paxActive = false;
+      document.getElementById('pax-screen').classList.remove('show');
+      departing.classList.remove('show');
+      // Réappliquer le state pour retrouver le bon affichage
+      if (_paxCurState) applyState(_paxCurState);
+    }, 2000);
+  }, 2000);
+}
+
+function setBadge(mode) {
+  const badge = document.getElementById('pax-badge');
+  const text  = document.getElementById('pax-badge-text');
+  badge.className = 'pax-status-badge ' + mode;
+  if (mode === 'boarding')  text.textContent = 'Embarquement en cours';
+  if (mode === 'closing')   text.textContent = 'Fin d\'embarquement';
+  if (mode === 'departing') text.textContent = 'Départ en cours';
+}
+
+
+// ══════════════════════════════════════
+// FIN DE SERVICE
+// ══════════════════════════════════════
+function showFinScreen(state) {
+  // Cacher tout sauf fin-screen
+  document.getElementById('pax-screen').classList.remove('show');
+  document.getElementById('predep-screen').classList.remove('show');
+  document.querySelector('.ph-header').style.display      = 'none';
+  document.querySelector('.ph-route').style.display       = 'none';
+  document.querySelector('.ph-stops-label').style.display = 'none';
+  document.getElementById('stops-track').style.display    = 'none';
+  document.getElementById('next-banner').style.display    = 'none';
+  document.getElementById('terminus-banner').classList.remove('show');
+  stopTerminusScroll();
+
+  // Remplir infos
+  const terminusIdx = (state.stops || []).length - 1;
+  const stationName = state.stops?.[terminusIdx]?.name || state.terminus || '—';
+  document.getElementById('fin-info').textContent = stationName + '  ·  ' + (state.trainNumber || '');
+
+  // Afficher l'écran fin 4s, puis collapse → pastille
+  document.getElementById('idle-pill').classList.remove('show');
+  document.getElementById('fin-screen').classList.add('show');
+
+  setTimeout(() => {
+    // Collapse du panel
+    const panel = document.getElementById('train-panel');
+    panel.classList.add('collapsing');
+
+    setTimeout(() => {
+      // Cacher le panel, afficher la pastille
+      panel.classList.remove('collapsing');
+      panel.style.display = 'none';
+      document.getElementById('fin-screen').classList.remove('show');
+      document.getElementById('idle-pill').classList.add('show');
+      startIdleCycle();
+    }, 600);
+  }, 4000);
+}
+
+
+// ══════════════════════════════════════
+// NO SERVICE
+// ══════════════════════════════════════
+let _nsTimer    = null;
+let _nsInterval = null;
+
+function clearNoServiceTimer() {
+  if (_nsTimer)    { clearTimeout(_nsTimer);   _nsTimer = null; }
+  if (_nsInterval) { clearInterval(_nsInterval); _nsInterval = null; }
+}
+
+function showNoService() {
+  // Cacher tout
+  document.getElementById('pax-screen').classList.remove('show');
+  document.getElementById('predep-screen').classList.remove('show');
+  document.getElementById('fin-screen').classList.remove('show');
+  document.getElementById('idle-pill').classList.remove('show');
+  document.querySelector('.ph-header').style.display      = 'none';
+  document.querySelector('.ph-route').style.display       = 'none';
+  document.querySelector('.ph-stops-label').style.display = 'none';
+  document.getElementById('stops-track').style.display    = 'none';
+  document.getElementById('next-banner').style.display    = 'none';
+  document.getElementById('terminus-banner').classList.remove('show');
+  stopTerminusScroll();
+
+  const screen    = document.getElementById('no-service-screen');
+  const countdown = document.getElementById('ns-countdown');
+  screen.classList.add('show');
+
+  clearNoServiceTimer();
+  let t = 10;
+  countdown.textContent = 'Veille dans ' + t + 's';
+
+  _nsInterval = setInterval(() => {
+    t--;
+    if (t > 0) {
+      countdown.textContent = 'Veille dans ' + t + 's';
+    } else {
+      clearInterval(_nsInterval);
+      _nsInterval = null;
+      countdown.textContent = '';
+      // Collapse panel → pastille
+      const panel = document.getElementById('train-panel');
+      panel.classList.add('collapsing');
+      setTimeout(() => {
+        panel.classList.remove('collapsing');
+        panel.style.display = 'none';
+        screen.classList.remove('show');
+        document.getElementById('idle-pill').classList.add('show');
+        startIdleCycle();
+      }, 600);
+    }
+  }, 1000);
+}
+
+
+// ══════════════════════════════════════
+// IDLE CYCLE (pastille → point → pastille)
+// ══════════════════════════════════════
+let _idleTimer = null;
+
+function stopIdleCycle() {
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+  const pill = document.getElementById('idle-pill');
+  pill.classList.remove('minimal');
+}
+
+function startIdleCycle() {
+  stopIdleCycle();
+  scheduleMinimize();
+}
+
+function scheduleMinimize() {
+  // 30s en mode plein → réduire au point
+  _idleTimer = setTimeout(() => {
+    document.getElementById('idle-pill').classList.add('minimal');
+    // 20s en mode point → se réagrandir
+    _idleTimer = setTimeout(() => {
+      document.getElementById('idle-pill').classList.remove('minimal');
+      // Reboucle
+      scheduleMinimize();
+    }, 20000);
+  }, 30000);
+}
+
+// ══════════════════════════════════════
+// MODE BUS — APPLY STATE
+// ══════════════════════════════════════
+let _busPaxActive   = false;
+let _busPaxCurState = null;
+let _busNsInterval  = null;
+let _busNsTimer     = null;
+let _btTimer = null, _btRAF = null, _btPhase = 0;
+
+function applyBusState(state) {
+  // Power
+  if (state.power === false) { powerOff(); return; }
+  if (state.power === true)  { powerOn(); }
+
+  // Cacher train panel si visible
+  const tp = document.getElementById('train-panel');
+  if (tp && tp.style.display !== 'none') { tp.classList.remove('visible'); tp.style.display = 'none'; }
+
+  // Remettre le bus panel si caché
+  const bp = document.getElementById('bus-panel');
+  if (bp.style.display === 'none') {
+    bp.style.display = '';
+    bp.classList.remove('collapsing', 'visible');
+    void bp.offsetWidth;
+    bp.classList.add('visible');
+  }
+
+  // Reset global bus
+  document.getElementById('idle-pill').classList.remove('show');
+  stopIdleCycle();
+  busNsTimerClear();
+  document.getElementById('bus-no-service-screen').classList.remove('show');
+  document.getElementById('bus-fin-screen').classList.remove('show');
+  document.getElementById('bus-pax-screen').classList.remove('show');
+  document.getElementById('bus-predep-screen').classList.remove('show');
+
+  const isEmpty = !state.stops || state.stops.length === 0;
+  if (isEmpty)   { busShowNoService(); return; }
+  if (state.fin) { busShowFin(state); return; }
+  if (state.pax) { busShowPax(state); return; }
+
+  if (_busPaxActive) {
+    _busPaxActive = false;
+    document.getElementById('bus-svg-boarding').classList.remove('show');
+    document.getElementById('bus-svg-closing').classList.remove('show');
+    document.getElementById('bus-svg-departing').classList.remove('show');
+  }
+
+  if (!state.departed) { busShowPredep(state); return; }
+
+  busShowVoyage(state);
+}
+
+function busShowPredep(state) {
+  document.getElementById('bus-next-banner').style.display   = 'none';
+  document.getElementById('bus-terminus-banner').classList.remove('show');
+  document.getElementById('bus-ph-header').style.display     = 'none';
+  document.getElementById('bus-ph-route').style.display      = 'none';
+  document.getElementById('bus-ph-stops-label').style.display= 'none';
+  document.getElementById('bus-stops-track').style.display   = 'none';
+  busStopTerminusScroll();
+
+  const op = OPERATOR_COLORS[state.operator] || { bg:'#555', fg:'#fff' };
+  const badge = document.getElementById('bus-pd-badge');
+  document.getElementById('bus-pd-line-num').textContent = busLineNum(state.trainNumber);
+  badge.style.background  = op.bg;
+  badge.style.color       = op.fg;
+  document.getElementById('bus-pd-line').textContent     = state.trainNumber || 'Ligne';
+  document.getElementById('bus-pd-operator').textContent = state.operator || '—';
+  document.getElementById('bus-pd-origin').textContent = state.origin;
+  document.getElementById('bus-pd-dest').textContent   = state.terminus;
+  const names = (state.stops || []).map(s => s.name).join('  •  ');
+  document.getElementById('bus-pd-ticker').textContent = names + '  •  ' + names;
+  document.getElementById('bus-predep-screen').classList.add('show');
+}
+
+function busShowVoyage(state) {
+  document.getElementById('bus-ph-header').style.display      = '';
+  document.getElementById('bus-ph-route').style.display       = '';
+  document.getElementById('bus-ph-stops-label').style.display = '';
+  document.getElementById('bus-stops-track').style.display    = '';
+
+  const op = OPERATOR_COLORS[state.operator] || { bg:'#555', fg:'#fff' };
+  const ob = document.getElementById('bus-op-badge');
+  document.getElementById('bus-op-line-num').textContent = busLineNum(state.trainNumber);
+  ob.style.background = op.bg;
+  ob.style.color      = op.fg;
+  document.getElementById('bus-line-number').textContent   = state.trainNumber || 'Ligne';
+  document.getElementById('bus-operator-sub').textContent  = state.operator || '—';
+  document.getElementById('bus-eta-time').textContent     = state.eta || '—';
+  document.getElementById('bus-route-origin').textContent = state.origin;
+  document.getElementById('bus-route-dest').textContent   = state.terminus;
+
+  const track   = document.getElementById('bus-stops-track');
+  const busIcon = document.getElementById('bus-icon');
+  track.innerHTML = '';
+  track.appendChild(busIcon);
+
+  const currentIdx  = state.stops.findIndex(s => s.status === 'current');
+  const nextIdx     = state.stops.findIndex((s,i) => i > currentIdx && s.status === 'upcoming');
+  const terminusIdx = state.stops.length - 1;
+  const isTerminus  = currentIdx === terminusIdx;
+
+  state.stops.forEach((stop, i) => {
+    const div = document.createElement('div');
+    let cls = 'stop-item ' + stop.status;
+    if (i === nextIdx) cls += ' next-stop';
+    div.className = cls;
+    div.innerHTML = `<div class="stop-dot"></div><span class="stop-name">${stop.name}</span>`;
+    track.appendChild(div);
+  });
+
+  if (currentIdx >= 0) {
+    const items = track.querySelectorAll('.stop-item');
+    busIcon.style.top = (items[currentIdx].offsetTop + 2) + 'px';
+  }
+
+  const nextBanner = document.getElementById('bus-next-banner');
+  const termBanner = document.getElementById('bus-terminus-banner');
+  if (isTerminus) {
+    busStartTerminusScroll(state.stops[terminusIdx].name);
+    termBanner.classList.add('show');
+    nextBanner.style.display = 'none';
+  } else {
+    busStopTerminusScroll();
+    termBanner.classList.remove('show');
+    if (nextIdx >= 0) {
+      nextBanner.style.display = 'flex';
+      document.getElementById('bus-next-stop-name').textContent = state.stops[nextIdx].name;
+    } else {
+      nextBanner.style.display = 'none';
+    }
+  }
+}
+
+function busShowPax(state) {
+  _busPaxActive   = true;
+  _busPaxCurState = state;
+  document.getElementById('bus-predep-screen').classList.remove('show');
+  document.getElementById('bus-ph-header').style.display      = 'none';
+  document.getElementById('bus-ph-route').style.display       = 'none';
+  document.getElementById('bus-ph-stops-label').style.display = 'none';
+  document.getElementById('bus-stops-track').style.display    = 'none';
+  document.getElementById('bus-next-banner').style.display    = 'none';
+  document.getElementById('bus-terminus-banner').classList.remove('show');
+  busStopTerminusScroll();
+  const curIdx = (state.stops || []).findIndex(s => s.status === 'current');
+  document.getElementById('bus-pax-station-name').textContent = curIdx >= 0 ? state.stops[curIdx].name : (state.origin || '—');
+  busSetBadge('boarding');
+  document.getElementById('bus-svg-boarding').classList.add('show');
+  document.getElementById('bus-svg-closing').classList.remove('show');
+  document.getElementById('bus-svg-departing').classList.remove('show');
+  document.getElementById('bus-pax-screen').classList.add('show');
+}
+
+function busHidePax() {
+  if (!_busPaxActive) return;
+  busSetBadge('closing');
+  document.getElementById('bus-svg-boarding').classList.remove('show');
+  document.getElementById('bus-svg-closing').classList.add('show');
+  setTimeout(() => {
+    busSetBadge('departing');
+    document.getElementById('bus-svg-closing').classList.remove('show');
+    document.getElementById('bus-svg-departing').classList.add('show');
+    setTimeout(() => {
+      _busPaxActive = false;
+      document.getElementById('bus-pax-screen').classList.remove('show');
+      document.getElementById('bus-svg-departing').classList.remove('show');
+      if (_busPaxCurState) applyBusState(_busPaxCurState);
+    }, 2000);
+  }, 2000);
+}
+
+function busSetBadge(mode) {
+  const badge = document.getElementById('bus-pax-badge');
+  const text  = document.getElementById('bus-pax-badge-text');
+  badge.className = 'pax-status-badge ' + mode;
+  if (mode === 'boarding')  text.textContent = 'Embarquement en cours';
+  if (mode === 'closing')   text.textContent = 'Fermeture des portes';
+  if (mode === 'departing') text.textContent = 'Départ en cours';
+}
+
+function busShowFin(state) {
+  document.getElementById('bus-pax-screen').classList.remove('show');
+  document.getElementById('bus-predep-screen').classList.remove('show');
+  document.getElementById('bus-ph-header').style.display      = 'none';
+  document.getElementById('bus-ph-route').style.display       = 'none';
+  document.getElementById('bus-ph-stops-label').style.display = 'none';
+  document.getElementById('bus-stops-track').style.display    = 'none';
+  document.getElementById('bus-next-banner').style.display    = 'none';
+  document.getElementById('bus-terminus-banner').classList.remove('show');
+  busStopTerminusScroll();
+  const lastIdx = (state.stops || []).length - 1;
+  document.getElementById('bus-fin-info').textContent = (state.stops?.[lastIdx]?.name || state.terminus || '—') + '  ·  ' + (state.trainNumber || '');
+  document.getElementById('idle-pill').classList.remove('show');
+  document.getElementById('bus-fin-screen').classList.add('show');
+  setTimeout(() => {
+    const bp = document.getElementById('bus-panel');
+    bp.classList.add('collapsing');
+    setTimeout(() => {
+      bp.classList.remove('collapsing'); bp.style.display = 'none';
+      document.getElementById('bus-fin-screen').classList.remove('show');
+      document.getElementById('idle-pill').classList.add('show');
+      startIdleCycle();
+    }, 600);
+  }, 4000);
+}
+
+function busNsTimerClear() {
+  if (_busNsTimer)    { clearTimeout(_busNsTimer);    _busNsTimer    = null; }
+  if (_busNsInterval) { clearInterval(_busNsInterval); _busNsInterval = null; }
+}
+
+function busShowNoService() {
+  document.getElementById('bus-pax-screen').classList.remove('show');
+  document.getElementById('bus-predep-screen').classList.remove('show');
+  document.getElementById('bus-fin-screen').classList.remove('show');
+  document.getElementById('bus-ph-header').style.display      = 'none';
+  document.getElementById('bus-ph-route').style.display       = 'none';
+  document.getElementById('bus-ph-stops-label').style.display = 'none';
+  document.getElementById('bus-stops-track').style.display    = 'none';
+  document.getElementById('bus-next-banner').style.display    = 'none';
+  document.getElementById('bus-terminus-banner').classList.remove('show');
+  busStopTerminusScroll();
+  const screen    = document.getElementById('bus-no-service-screen');
+  const countdown = document.getElementById('bus-ns-countdown');
+  screen.classList.add('show');
+  busNsTimerClear();
+  let t = 10;
+  countdown.textContent = 'Veille dans ' + t + 's';
+  _busNsInterval = setInterval(() => {
+    t--;
+    if (t > 0) { countdown.textContent = 'Veille dans ' + t + 's'; }
+    else {
+      clearInterval(_busNsInterval); _busNsInterval = null;
+      countdown.textContent = '';
+      const bp = document.getElementById('bus-panel');
+      bp.classList.add('collapsing');
+      setTimeout(() => {
+        bp.classList.remove('collapsing'); bp.style.display = 'none';
+        screen.classList.remove('show');
+        document.getElementById('idle-pill').classList.add('show');
+        startIdleCycle();
+      }, 600);
+    }
+  }, 1000);
+}
+
+// Terminus scroll bus (variables indépendantes)
+function busStopTerminusScroll() {
+  if (_btTimer) { clearTimeout(_btTimer); _btTimer = null; }
+  if (_btRAF)   { cancelAnimationFrame(_btRAF); _btRAF = null; }
+}
+function busStartTerminusScroll(name) {
+  busStopTerminusScroll(); _btPhase = 0; busRunPhase(name);
+}
+function busRunPhase(name) {
+  const tb   = document.getElementById('bus-tb-text');
+  const wrap = document.getElementById('bus-tb-wrap');
+  if (_btPhase === 0) {
+    tb.textContent = name + '  —  TERMINUS'; tb.style.left = '0px';
+    _btRAF = requestAnimationFrame(() => {
+      const W = wrap.offsetWidth, T = tb.offsetWidth;
+      if (T <= W) { _btTimer = setTimeout(() => { _btPhase = 1; busRunPhase(name); }, 3000); }
+      else { busScrollText(tb, wrap, W, T, () => { _btPhase = 1; _btTimer = setTimeout(() => busRunPhase(name), 500); }); }
+    });
+  } else {
+    tb.textContent = 'Pensez à descendre à ce terminus !'; tb.style.left = '0px';
+    _btRAF = requestAnimationFrame(() => {
+      const W = wrap.offsetWidth, T = tb.offsetWidth;
+      busScrollText(tb, wrap, W, T, () => { _btPhase = 0; _btTimer = setTimeout(() => busRunPhase(name), 500); });
+    });
+  }
+}
+function busScrollText(tb, wrap, W, T, cb) {
+  let x = W, prev = null;
+  tb.style.left = x + 'px';
+  function step(ts) {
+    if (prev === null) prev = ts;
+    x -= 80 * (ts - prev) / 1000; prev = ts;
+    tb.style.left = x + 'px';
+    if (x > -T) { _btRAF = requestAnimationFrame(step); } else { _btRAF = null; cb(); }
+  }
+  _btRAF = requestAnimationFrame(step);
+}
+
+// Extraire numéro de ligne (ex: "Ligne 95" → "95", "Bus 38" → "38")
+function busLineNum(s) {
+  if (!s) return '🚌';
+  const m = s.match(/\b([A-Z]?\d{1,3}[A-Z]?)\b/);
+  if (m) return m[1];
+  const w = s.trim().split(/\s+/);
+  return (w[w.length - 1] || '').slice(0, 3) || '🚌';
+}
+
+</script>
+</body>
+</html>

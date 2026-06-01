@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Train Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #0d0d14;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+  padding: 32px;
+}
+h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: rgba(255,255,255,0.35); margin-bottom: 32px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 860px; }
+.card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+.card-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.3);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+label {
+  display: block;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  font-weight: 600;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+input, select {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 13px;
+  margin-bottom: 14px;
+  outline: none;
+  transition: border .2s;
+}
+input:focus, select:focus { border-color: rgba(255,255,255,0.35); }
+select option { background: #1a1a2e; }
+
+.stops-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.stop-row { display: flex; align-items: center; gap: 8px; }
+.stop-row input { margin-bottom: 0; flex: 1; }
+.stop-status {
+  flex-shrink: 0; padding: 6px 10px; border-radius: 8px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+  transition: all .2s; white-space: nowrap;
+}
+.stop-status.passed  { background: rgba(255,255,255,0.1);  color: rgba(255,255,255,0.4); }
+.stop-status.current { background: #fff; color: #000; border-color: #fff; }
+.stop-status.upcoming{ background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3); }
+.stop-del {
+  flex-shrink: 0; background: rgba(255,60,60,0.15);
+  border: 1px solid rgba(255,60,60,0.2); border-radius: 8px;
+  color: #ff6060; font-size: 14px; padding: 6px 9px;
+  cursor: pointer; transition: background .2s;
+}
+.stop-del:hover { background: rgba(255,60,60,0.3); }
+
+.btn {
+  padding: 11px 20px; border-radius: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; border: none;
+  transition: opacity .2s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary  { background: #fff; color: #000; }
+.btn-secondary{ background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #fff; }
+.btn-green    { background: #00c853; color: #000; }
+.btn-red      { background: rgba(255,60,60,0.15); border: 1px solid rgba(255,60,60,0.25); color: #ff6060; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+.nav-card { grid-column: 1 / -1; }
+.nav-btns { display: flex; gap: 14px; }
+.nav-btn {
+  flex: 1; padding: 18px; border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px; font-weight: 800; cursor: pointer; border: none;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; transition: opacity .2s, transform .1s;
+}
+.nav-btn:active { transform: scale(.97); }
+.nav-prev { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #fff; }
+.nav-next { background: #fff; color: #000; }
+
+/* Badge édition en cours */
+#edit-badge {
+  display: none; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px;
+  background: rgba(255,180,0,0.15); border: 1px solid rgba(255,180,0,0.3);
+  font-size: 11px; font-weight: 700; color: #ffb400;
+  margin-bottom: 16px;
+}
+#edit-badge.show { display: inline-flex; }
+
+#toast {
+  position: fixed; bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: rgba(0,200,80,0.9); color: #000;
+  font-weight: 700; font-size: 13px;
+  padding: 10px 22px; border-radius: 999px;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+.ws-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: rgba(255,255,255,0.3); margin-bottom: 28px;
+}
+.ws-dot { width:7px; height:7px; border-radius:50%; background:#555; }
+.ws-dot.connected { background:#00c853; box-shadow: 0 0 8px #00c853; }
+
+/* ── Mode toggle ── */
+.mode-toggle { display:flex; gap:8px; margin-bottom:20px; }
+.mode-btn { padding:7px 20px; border-radius:10px; font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:700; cursor:pointer; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.45); transition:all .2s; }
+.mode-btn.active { background:#fff; color:#000; border-color:#fff; }
+
+/* ── Presets Bus ── */
+#bus-presets-card { display: none; }
+#bus-presets-card.show { display: block; }
+
+.presets-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; min-height: 20px; }
+.preset-row {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 11px;
+  padding: 10px 12px;
+  transition: background .15s;
+}
+.preset-row:hover { background: rgba(255,255,255,0.07); }
+.preset-info { flex: 1; min-width: 0; }
+.preset-name {
+  font-size: 13px; font-weight: 700; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.preset-meta {
+  font-size: 11px; color: rgba(255,255,255,0.3); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.preset-load {
+  flex-shrink: 0; padding: 5px 12px; border-radius: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; transition: background .2s;
+}
+.preset-load:hover { background: rgba(255,255,255,0.18); }
+.preset-del {
+  flex-shrink: 0; background: rgba(255,60,60,0.12);
+  border: 1px solid rgba(255,60,60,0.2); border-radius: 8px;
+  color: #ff6060; font-size: 13px; padding: 5px 9px;
+  cursor: pointer; transition: background .2s; font-family: 'Space Grotesk', sans-serif;
+}
+.preset-del:hover { background: rgba(255,60,60,0.28); }
+.presets-empty {
+  font-size: 12px; color: rgba(255,255,255,0.2);
+  text-align: center; padding: 12px 0; font-style: italic;
+}
+.preset-save-row { display: flex; gap: 8px; align-items: center; }
+.preset-save-row input { margin-bottom: 0; flex: 1; }
+</style>
+
+<style>
+#power-btn {
+  transition: background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+#power-btn.on {
+  background: #0a2e0a !important;
+  color: #00e676 !important;
+  border-color: #00e676 !important;
+  box-shadow: 0 0 18px rgba(0,230,118,0.35);
+}
+#power-btn.off {
+  background: #1a1a2e !important;
+  color: #ff4444 !important;
+  border-color: #ff4444 !important;
+  box-shadow: 0 0 18px rgba(255,68,68,0.2);
+}
+
+/* ═══════════════════════════════════════════════
+   DISCONNECT OVERLAY + POPUP
+═══════════════════════════════════════════════ */
+#disconnect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(3px) grayscale(40%);
+  -webkit-backdrop-filter: blur(3px) grayscale(40%);
+  display: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+#disconnect-overlay.show {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#disconnect-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 9999;
+  transform: translate(-50%, -50%) scale(0.85);
+  background: rgba(15,10,12,0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1.5px solid rgba(255,80,80,0.5);
+  border-radius: 18px;
+  padding: 28px 36px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 320px;
+  font-family: inherit;
+  color: #fff;
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.7),
+    0 0 50px rgba(255,80,80,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  opacity: 0;
+  transition:
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(.34,1.4,.64,1),
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+#disconnect-popup.show {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+#disconnect-popup.reconnected {
+  border-color: rgba(0,230,118,0.5);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.7),
+    0 0 50px rgba(0,230,118,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.dp-icon {
+  width: 60px; height: 60px;
+  border: 2.5px solid #ff5050;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: rgba(255,80,80,0.06);
+  box-shadow: 0 0 24px rgba(255,80,80,0.2);
+  animation: dpIconPulse 1.8s ease-in-out infinite;
+}
+@keyframes dpIconPulse {
+  0%, 100% { box-shadow: 0 0 24px rgba(255,80,80,0.2); }
+  50%      { box-shadow: 0 0 36px rgba(255,80,80,0.4); }
+}
+.dp-icon::after {
+  content: '';
+  position: absolute;
+  width: 70px; height: 2.5px;
+  background: #ff5050;
+  border-radius: 2px;
+  transform: rotate(-45deg);
+  box-shadow: 0 0 8px rgba(255,80,80,0.4);
+}
+.dp-icon-svg {
+  width: 28px; height: 28px;
+  color: #ff5050;
+}
+
+#disconnect-popup.reconnected .dp-icon {
+  border-color: #00e676;
+  background: rgba(0,230,118,0.08);
+  box-shadow: 0 0 24px rgba(0,230,118,0.3);
+  animation: none;
+}
+#disconnect-popup.reconnected .dp-icon::after { display: none; }
+#disconnect-popup.reconnected .dp-icon-svg { color: #00e676; }
+
+.dp-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.dp-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  margin-top: -8px;
+}
+.dp-status-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,80,80,0.85);
+  padding-top: 4px;
+}
+#disconnect-popup.reconnected .dp-status-line { color: #00e676; }
+.dp-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dpDot 1s ease-in-out infinite;
+}
+#disconnect-popup.reconnected .dp-status-dot { animation: none; }
+@keyframes dpDot { 0%, 100% {opacity: 1} 50% {opacity: 0.3} }
+
+/* When disconnected, grise out everything */
+body.disconnected .card,
+body.disconnected #power-btn,
+body.disconnected .mode-switch {
+  filter: grayscale(80%) brightness(0.7);
+  pointer-events: none;
+  user-select: none;
+  transition: filter 0.4s ease;
+}
+body.disconnected input,
+body.disconnected button,
+body.disconnected select {
+  pointer-events: none !important;
+}
+
+/* ═══════════════════════════════════════════════
+   WELCOME POPUP — Style encadré comme disconnect
+═══════════════════════════════════════════════ */
+#welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+#welcome-overlay.hide { opacity: 0; pointer-events: none; }
+
+#welcome-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 99999;
+  transform: translate(-50%, -50%) scale(0.85);
+  background: rgba(15,12,18,0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 360px;
+  color: #fff;
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.7),
+    0 0 60px rgba(255,255,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  opacity: 0;
+  animation: wpAppear 0.7s cubic-bezier(.34,1.4,.64,1) 0.1s forwards,
+             wpDisappear 0.7s cubic-bezier(.5,.0,.7,.2) 3.4s forwards;
+}
+@keyframes wpAppear {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7) rotate(-2deg); filter: blur(8px); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.03) rotate(0.5deg); filter: blur(0); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); filter: blur(0); }
+}
+@keyframes wpDisappear {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1) rotate(1deg); filter: blur(6px); }
+}
+
+.wp-logo {
+  font-family: 'Archivo', Helvetica, Arial, sans-serif;
+  font-weight: 900;
+  font-size: clamp(48px, 8vw, 88px);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: wpLogoIn 0.8s cubic-bezier(.25,.9,.3,1) 0.5s forwards,
+             wpLogoOut 0.5s cubic-bezier(.4,0,.7,.3) 3.3s forwards;
+}
+@keyframes wpLogoIn {
+  0%   { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes wpLogoOut {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+
+.wp-z {
+  background-image: repeating-linear-gradient(-55deg, #fff 0px, #fff 2px, transparent 2px, transparent 6px);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1.5px #fff;
+  position: relative;
+  display: inline-block;
+}
+
+/* Shimmer lumineux qui passe sur le Z une seule fois */
+.wp-z-wrap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+.wp-z-wrap::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -120%;
+  width: 60%;
+  height: 140%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255,255,255,0) 30%,
+    rgba(255,255,255,0.85) 50%,
+    rgba(255,255,255,0) 70%,
+    transparent 100%
+  );
+  filter: blur(8px);
+  transform: skewX(-15deg);
+  pointer-events: none;
+  animation: wpZShine 1.1s cubic-bezier(.4,0,.2,1) 1.4s 1 forwards;
+}
+@keyframes wpZShine {
+  0%   { left: -120%; opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { left: 220%; opacity: 0; }
+}
+
+.wp-divider {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  opacity: 0;
+  transform: scaleX(0);
+  animation: wpDivIn 0.6s cubic-bezier(.4,.2,.2,1) 1s forwards,
+             wpDivOut 0.4s ease 3.3s forwards;
+}
+@keyframes wpDivIn {
+  0%   { opacity: 0; transform: scaleX(0); }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+@keyframes wpDivOut {
+  0%   { opacity: 1; }
+  100% { opacity: 0; transform: scaleX(0.6); }
+}
+
+.wp-tagline {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: wpTagIn 0.6s cubic-bezier(.25,.9,.3,1) 1.2s forwards,
+             wpTagOut 0.4s ease 3.3s forwards;
+}
+@keyframes wpTagIn {
+  0%   { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes wpTagOut {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+</style>
+</head>
+<body>
+
+<!-- Disconnect overlay + popup -->
+<div id="disconnect-overlay"></div>
+
+<div id="disconnect-popup">
+  <div class="dp-icon">
+    <svg class="dp-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M5 12.55a11 11 0 0 1 14.08 0" stroke-linecap="round"/>
+      <path d="M1.42 9a16 16 0 0 1 21.16 0" stroke-linecap="round"/>
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke-linecap="round"/>
+      <line x1="12" y1="20" x2="12" y2="20" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="dp-title" id="dp-title">Serveur déconnecté</div>
+  <div class="dp-subtitle" id="dp-subtitle">Vérifiez que le serveur est bien lancé</div>
+  <div class="dp-status-line">
+    <span class="dp-status-dot"></span>
+    <span id="dp-status">En attente de reconnexion…</span>
+  </div>
+</div>
+
+<!-- Pop-up de bienvenue -->
+<div id="welcome-overlay"></div>
+<div id="welcome-popup">
+  <div class="wp-logo">VY<span class="wp-z-wrap"><span class="wp-z">Z</span></span>ION</div>
+  <div class="wp-divider"></div>
+  <div class="wp-tagline">Bienvenue sur le dashboard</div>
+</div>
+
+<h1>🚂 Train Overlay — Dashboard</h1>
+<p class="subtitle">Contrôle en temps réel de l'overlay OBS</p>
+
+<div class="mode-toggle">
+  <button id="mode-train" class="mode-btn active" onclick="switchMode('train')">🚂 Train</button>
+  <button id="mode-bus"   class="mode-btn"        onclick="switchMode('bus')">🚌 Bus</button>
+</div>
+
+<div class="ws-status">
+  <div class="ws-dot" id="ws-dot"></div>
+  <span id="ws-label">Connexion au serveur…</span>
+</div>
+
+<div id="edit-badge">✏️ Modifications en cours — non synchronisées</div>
+
+<div class="grid">
+
+  <div class="card">
+    <div class="card-title">Infos du train</div>
+    <label>Opérateur</label>
+    <select id="operator" onchange="markEditing()">
+      <option value="SNCF">SNCF</option>
+      <option value="DB">DB (Deutsche Bahn)</option>
+      <option value="OBB">ÖBB (Autriche)</option>
+      <option value="CD">ČD (Czech Railways)</option>
+    </select>
+    <label>Numéro de train</label>
+    <input type="text" id="trainNumber" placeholder="ex: TGV 6201" oninput="markEditing()">
+    <label>Gare d'origine</label>
+    <input type="text" id="origin" placeholder="ex: Paris Gare de Lyon" oninput="markEditing()">
+    <label>Terminus</label>
+    <input type="text" id="terminus" placeholder="ex: Marseille-Saint-Charles" oninput="markEditing()">
+    <label>Heure d'arrivée estimée au terminus</label>
+    <input type="text" id="eta" placeholder="ex: 14h32" oninput="markEditing()">
+  </div>
+
+  <div class="card">
+    <div class="card-title">Arrêts</div>
+    <div class="stops-list" id="stops-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="addStop()">+ Ajouter un arrêt</button>
+    </div>
+  </div>
+
+  <div class="card nav-card">
+    <div class="card-title">Navigation rapide (Stream Deck)</div>
+    <div class="nav-btns">
+      <button class="nav-btn nav-prev" onclick="navStop('prev')">← Arrêt précédent</button>
+      <button class="nav-btn nav-next" onclick="navStop('next')">Arrêt suivant →</button>
+    </div>
+    <p style="margin-top:14px; font-size:12px; color:rgba(255,255,255,0.25);">
+      Stream Deck → GET http://localhost:3000/api/next &nbsp;|&nbsp; GET http://localhost:3000/api/prev
+    </p>
+  </div>
+
+  <!-- ── Presets Bus ── -->
+  <div class="card nav-card" id="bus-presets-card">
+    <div class="card-title">Presets de lignes de bus</div>
+    <div class="presets-list" id="presets-list"></div>
+    <div class="preset-save-row">
+      <input type="text" id="preset-name-input" placeholder="Nom du preset (ex: Ligne 95 Montrouge→Pontoise)">
+      <button class="btn btn-secondary" onclick="savePreset()" style="white-space:nowrap;flex-shrink:0;">💾 Sauvegarder</button>
+    </div>
+  </div>
+
+  <div class="card" style="grid-column:1/-1; display:flex; flex-direction:column; gap:12px;">
+    <button id="power-btn" class="btn" style="width:100%;padding:14px;background:#1a1a2e;color:#ff4444;border:2px solid #ff4444;font-size:18px;letter-spacing:1px;" onclick="togglePower()">⏻ Overlay OFF</button>
+    <div id="overlay-actions" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; opacity:0.3; pointer-events:none; transition: opacity 0.4s ease;">
+      <button class="btn btn-primary" style="flex:1; padding:14px;" onclick="saveState()">💾 Appliquer à l'overlay</button>
+      <button class="btn" style="flex:1;padding:14px;background:#00c853;color:#000;" onclick="lancerDepart()">🚂 Lancer le départ</button>
+      <button class="btn" style="flex:1;padding:14px;background:#1565c0;color:#fff;" onclick="togglePax()">🧳 PAX Embarquement</button>
+      <button id="fin-btn" class="btn" style="flex:1;padding:14px;background:#333;color:#fff;border:1px solid #555;opacity:0.35;pointer-events:none;transition:opacity 0.3s ease;" onclick="finService()">🏁 Fin de service</button>
+      <button class="btn btn-red" onclick="resetState()">Réinitialiser</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast">✓ Mis à jour !</div>
+
+<script>
+// state local = source de vérité côté dashboard
+let state    = { operator:'SNCF', trainNumber:'', origin:'', terminus:'', eta:'', stops:[] };
+let _editing = false; // true = l'utilisateur est en train de modifier, on ignore les WS entrants
+let _mode    = 'train'; // 'train' | 'bus'
+
+// ── Opérateurs par mode ──
+const MODE_OPERATORS = {
+  train: [
+    { v:'SNCF', l:'SNCF' },
+    { v:'DB',   l:'DB (Deutsche Bahn)' },
+    { v:'OBB',  l:'ÖBB (Autriche)' },
+    { v:'CD',   l:'ČD (Czech Railways)' },
+  ],
+  bus: [
+    { v:'RATP',      l:'RATP' },
+    { v:'Keolis',    l:'Keolis' },
+    { v:'Transdev',  l:'Transdev' },
+    { v:'SNCF',      l:'SNCF Autocars' },
+    { v:'FlixBus',   l:'FlixBus' },
+    { v:'BlaBlaBus', l:'BlaBlaBus' },
+    { v:'TEC',       l:'TEC (Belgique)' },
+    { v:'De Lijn',   l:'De Lijn (Flandre)' },
+    { v:'STIB',      l:'STIB (Bruxelles)' },
+  ]
+};
+
+const MODE_LABELS = {
+  train: { h1:'🚂 Train Overlay — Dashboard', num:'Numéro de train', origin:'Gare d\'origine', numPh:'ex: TGV 6201', originPh:'ex: Paris Gare de Lyon', stopPh:'Nom de la gare' },
+  bus:   { h1:'🚌 Bus Overlay — Dashboard',   num:'Ligne',           origin:'Arrêt de départ', numPh:'ex: Ligne 95', originPh:'ex: Gare du Nord',       stopPh:'Nom de l\'arrêt' }
+};
+
+function switchMode(mode) {
+  _mode = mode;
+  document.getElementById('mode-train').classList.toggle('active', mode === 'train');
+  document.getElementById('mode-bus').classList.toggle('active',   mode === 'bus');
+  document.querySelector('h1').textContent = MODE_LABELS[mode].h1;
+  // Opérateurs
+  const sel = document.getElementById('operator');
+  sel.innerHTML = MODE_OPERATORS[mode].map(o => `<option value="${o.v}">${o.l}</option>`).join('');
+  // Labels + placeholders (trouver le label précédant chaque input)
+  labelBefore('trainNumber').textContent = MODE_LABELS[mode].num;
+  labelBefore('origin').textContent      = MODE_LABELS[mode].origin;
+  document.getElementById('trainNumber').placeholder = MODE_LABELS[mode].numPh;
+  document.getElementById('origin').placeholder      = MODE_LABELS[mode].originPh;
+  // Afficher/cacher la carte presets
+  document.getElementById('bus-presets-card').classList.toggle('show', mode === 'bus');
+  if (mode === 'bus') renderPresets();
+  markEditing();
+}
+
+function labelBefore(id) {
+  let el = document.getElementById(id).previousElementSibling;
+  while (el && el.tagName !== 'LABEL') el = el.previousElementSibling;
+  return el;
+}
+
+const STATUSES = ['passed', 'current', 'upcoming'];
+
+function markEditing() {
+  _editing = true;
+  document.getElementById('edit-badge').classList.add('show');
+}
+function clearEditing() {
+  _editing = false;
+  document.getElementById('edit-badge').classList.remove('show');
+}
+
+// WebSocket
+let ws;
+let _wasDisconnected = false;
+let _reconnectShownTimer = null;
+
+function showDisconnectPopup() {
+  const popup   = document.getElementById('disconnect-popup');
+  const overlay = document.getElementById('disconnect-overlay');
+  if (!popup || !overlay) return;
+
+  // Si on était en mode reconnecté qui était en train de disparaître, on annule
+  if (_reconnectShownTimer) { clearTimeout(_reconnectShownTimer); _reconnectShownTimer = null; }
+
+  // Reset état rouge
+  popup.classList.remove('reconnected');
+  document.getElementById('dp-title').textContent    = 'Serveur déconnecté';
+  document.getElementById('dp-subtitle').textContent = 'Vérifiez que le serveur est bien lancé';
+  document.getElementById('dp-status').textContent   = 'En attente de reconnexion…';
+
+  // Grise le dashboard + affiche direct le gros popup
+  document.body.classList.add('disconnected');
+  overlay.classList.add('show');
+  popup.classList.add('show');
+}
+
+function showReconnectedPopup() {
+  const popup   = document.getElementById('disconnect-popup');
+  const overlay = document.getElementById('disconnect-overlay');
+  if (!popup || !overlay) return;
+
+  // Passe en mode "reconnecté" (vert)
+  popup.classList.add('reconnected');
+  document.getElementById('dp-title').textContent    = 'Connexion retrouvée';
+  document.getElementById('dp-subtitle').textContent = 'Tout est revenu à la normale';
+  document.getElementById('dp-status').textContent   = 'Connecté';
+
+  // Disparaît après 1.8s
+  _reconnectShownTimer = setTimeout(() => {
+    popup.classList.remove('show', 'reconnected');
+    overlay.classList.remove('show');
+    document.body.classList.remove('disconnected');
+    _reconnectShownTimer = null;
+  }, 1800);
+}
+
+function connectWS() {
+  ws = new WebSocket('ws://localhost:3000');
+  ws.onopen = () => {
+    document.getElementById('ws-dot').className    = 'ws-dot connected';
+    document.getElementById('ws-label').textContent = 'Connecté au serveur';
+    // Si on revenait d'une déconnexion → afficher le message "retrouvée"
+    if (_wasDisconnected) {
+      _wasDisconnected = false;
+      showReconnectedPopup();
+    }
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-dot').className    = 'ws-dot';
+    document.getElementById('ws-label').textContent = 'Déconnecté — relance start.bat';
+    _wasDisconnected = true;
+    showDisconnectPopup();
+    setTimeout(connectWS, 3000);
+  };
+  ws.onmessage = e => {
+    const data = JSON.parse(e.data);
+    // Message power-only : synchroniser le bouton power avec l'état réel du serveur
+    if ('power' in data && Object.keys(data).length === 1) {
+      syncPowerButton(data.power);
+      return;
+    }
+    // On ignore si l'utilisateur est en train d'éditer
+    if (_editing) return;
+    // Ignorer si le state est d'un mode différent
+    if (data.mode && data.mode !== _mode) return;
+    state = data;
+    renderForm(state);
+  };
+}
+connectWS();
+
+// Cacher le popup de bienvenue après l'animation
+setTimeout(() => {
+  const wo = document.getElementById('welcome-overlay');
+  const wp = document.getElementById('welcome-popup');
+  if (wo) wo.classList.add('hide');
+  if (wp) wp.style.display = 'none';
+  setTimeout(() => { if (wo) wo.style.display = 'none'; }, 600);
+}, 4200);
+
+function renderForm(s) {
+  document.getElementById('operator').value    = s.operator    || 'SNCF';
+  document.getElementById('trainNumber').value = s.trainNumber || '';
+  document.getElementById('origin').value      = s.origin      || '';
+  document.getElementById('terminus').value    = s.terminus    || '';
+  document.getElementById('eta').value         = s.eta         || '';
+  state.stops = s.stops || [];
+  renderStops(state.stops);
+  // Sync état du bouton fin de service
+  const finBtn = document.getElementById('fin-btn');
+  if (finBtn) {
+    if (s.departed) {
+      finBtn.style.opacity       = '1';
+      finBtn.style.pointerEvents = 'auto';
+    } else {
+      finBtn.style.opacity       = '0.35';
+      finBtn.style.pointerEvents = 'none';
+    }
+  }
+}
+
+function renderStops(stops) {
+  const list = document.getElementById('stops-list');
+  list.innerHTML = '';
+  stops.forEach((stop, i) => {
+    const row = document.createElement('div');
+    row.className = 'stop-row';
+    row.innerHTML = `
+      <input type="text" value="${stop.name}" 
+        onchange="updateStopName(${i}, this.value)"
+        oninput="markEditing()"
+        placeholder="Nom de la gare">
+      <button class="stop-status ${stop.status}" onclick="cycleStatus(${i})">${statusLabel(stop.status)}</button>
+      <button class="stop-del" onclick="deleteStop(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function statusLabel(s) {
+  return s === 'passed' ? '✓ Passé' : s === 'current' ? '● En cours' : '○ À venir';
+}
+
+function cycleStatus(i) {
+  markEditing();
+  const cur  = state.stops[i].status;
+  const next = STATUSES[(STATUSES.indexOf(cur) + 1) % STATUSES.length];
+  if (next === 'current') state.stops.forEach((s,j) => { if(j!==i) s.status = j < i ? 'passed' : 'upcoming'; });
+  state.stops[i].status = next;
+  renderStops(state.stops);
+}
+
+function updateStopName(i, val) {
+  state.stops[i].name = val;
+}
+
+function addStop() {
+  markEditing();
+  const status = state.stops.length === 0 ? 'current' : 'upcoming';
+  state.stops.push({ name: 'Nouvelle gare', status: status });
+  renderStops(state.stops);
+}
+
+function deleteStop(i) {
+  markEditing();
+  state.stops.splice(i, 1);
+  renderStops(state.stops);
+}
+
+function collectState() {
+  return {
+    mode:        _mode,
+    operator:    document.getElementById('operator').value,
+    trainNumber: document.getElementById('trainNumber').value,
+    origin:      document.getElementById('origin').value,
+    terminus:    document.getElementById('terminus').value,
+    eta:         document.getElementById('eta').value,
+    stops:       state.stops,
+    departed:    false,   // toujours reset au pré-départ quand on applique
+    pax:         false,
+    fin:         false
+  };
+}
+
+function saveState() {
+  const s = collectState();
+  state = s;
+  // Reset fin-btn car on repart sur pré-départ
+  const finBtn = document.getElementById('fin-btn');
+  if (finBtn) { finBtn.style.opacity = '0.35'; finBtn.style.pointerEvents = 'none'; }
+  fetch('http://localhost:3000/api/state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(s)
+  }).then(() => {
+    clearEditing();
+    showToast('✓ Overlay mis à jour !');
+  });
+}
+
+function lancerDepart() {
+  const s = collectState();
+  s.departed = true;
+  state.departed = true;
+  fetch('http://localhost:3000/api/state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(s)
+  }).then(() => {
+    showToast('🚂 Départ lancé !');
+    // Débloquer le bouton fin de service
+    const finBtn = document.getElementById('fin-btn');
+    finBtn.style.opacity       = '1';
+    finBtn.style.pointerEvents = 'auto';
+  });
+}
+
+function finService() {
+  fetch('http://localhost:3000/api/fin').then(() => showToast('🏁 Fin de service !'));
+}
+
+function togglePax() {
+  fetch('http://localhost:3000/api/pax').then(() => showToast('🧳 PAX togglé !'));
+}
+
+function navStop(dir) {
+  fetch('http://localhost:3000/api/' + dir, { method: 'GET' });
+}
+
+function resetState() {
+  if (!confirm('Réinitialiser ?')) return;
+  fetch('http://localhost:3000/api/state').then(r => r.json()).then(s => {
+    clearEditing();
+    state = s;
+    renderForm(s);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+let _overlayPowered = false;
+
+let _powerLocked = false;
+
+// Synchro du bouton power avec l'état réel du serveur
+// (appelée au connexion WebSocket + à chaque broadcast power)
+function syncPowerButton(power) {
+  // Pendant l'animation boot (8.2s), on ignore pour ne pas la casser
+  if (_powerLocked) return;
+  // Si l'état matche déjà, rien à faire
+  if (_overlayPowered === !!power) return;
+
+  _overlayPowered = !!power;
+  const btn     = document.getElementById('power-btn');
+  const actions = document.getElementById('overlay-actions');
+
+  if (_overlayPowered) {
+    btn.textContent = '⏻ Overlay ON';
+    btn.classList.add('on');
+    btn.classList.remove('off');
+    actions.style.opacity       = '1';
+    actions.style.pointerEvents = 'auto';
+  } else {
+    btn.textContent = '⏻ Overlay OFF';
+    btn.classList.add('off');
+    btn.classList.remove('on');
+    actions.style.opacity       = '0.3';
+    actions.style.pointerEvents = 'none';
+  }
+}
+
+function togglePower() {
+  if (_powerLocked) return;
+  _overlayPowered = !_overlayPowered;
+  const btn     = document.getElementById('power-btn');
+  const actions = document.getElementById('overlay-actions');
+  if (_overlayPowered) {
+    btn.textContent = '⏻ Overlay ON';
+    btn.classList.add('on');
+    btn.classList.remove('off');
+    // Verrouiller pendant toute la séquence boot (8.2s)
+    _powerLocked = true;
+    btn.textContent        = '⏻ Démarrage...';
+    btn.style.opacity      = '0.6';
+    btn.style.pointerEvents = 'none';
+    // Animation points
+    let _dots = 0;
+    const _bootInterval = setInterval(() => {
+      _dots = (_dots + 1) % 4;
+      btn.textContent = '⏻ Démarrage' + '.'.repeat(_dots);
+    }, 500);
+    setTimeout(() => {
+      clearInterval(_bootInterval);
+      _powerLocked = false;
+      btn.style.opacity       = '1';
+      btn.style.pointerEvents = 'auto';
+      btn.textContent         = '⏻ Overlay ON';
+      actions.style.opacity       = '1';
+      actions.style.pointerEvents = 'auto';
+    }, 8200);
+  } else {
+    btn.textContent = '⏻ Overlay OFF';
+    btn.classList.add('off');
+    btn.classList.remove('on');
+    actions.style.opacity       = '0.3';
+    actions.style.pointerEvents = 'none';
+  }
+  fetch('http://localhost:3000/api/power', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ power: _overlayPowered })
+  });
+}
+
+// ══════════════════════════════════════
+//  PRESETS BUS (persistants côté serveur)
+// ══════════════════════════════════════
+let _presetsCache = [];
+
+function fetchPresets() {
+  return fetch('http://localhost:3000/api/presets')
+    .then(r => r.json())
+    .then(arr => { _presetsCache = Array.isArray(arr) ? arr : []; return _presetsCache; })
+    .catch(() => { _presetsCache = []; return []; });
+}
+
+function renderPresets() {
+  fetchPresets().then(presets => {
+    const list = document.getElementById('presets-list');
+    list.innerHTML = '';
+    if (presets.length === 0) {
+      list.innerHTML = '<div class="presets-empty">Aucun preset — remplis les infos et sauvegarde !</div>';
+      return;
+    }
+    presets.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'preset-row';
+      const stopsStr = (p.stops || []).map(s => s.name).join(' › ');
+      const meta = [
+        p.operator,
+        p.origin && p.terminus ? `${p.origin} → ${p.terminus}` : '',
+        (p.stops && p.stops.length) ? `${p.stops.length} arrêts` : ''
+      ].filter(Boolean).join(' · ');
+      row.innerHTML = `
+        <div class="preset-info">
+          <div class="preset-name">${escHtml(p.name)}</div>
+          <div class="preset-meta">${escHtml(meta)}</div>
+        </div>
+        <button class="preset-load" onclick="loadPreset(${i})">Charger</button>
+        <button class="preset-del"  onclick="deletePreset(${i})">✕</button>
+      `;
+      list.appendChild(row);
+    });
+  });
+}
+
+function savePreset() {
+  const nameInput = document.getElementById('preset-name-input');
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); showToast('⚠️ Donne un nom au preset !'); return; }
+  const current = collectState();
+  const preset = {
+    name,
+    operator:    current.operator,
+    trainNumber: current.trainNumber,
+    origin:      current.origin,
+    terminus:    current.terminus,
+    eta:         current.eta,
+    stops:       current.stops
+  };
+  fetch('http://localhost:3000/api/presets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(preset)
+  })
+  .then(r => r.json())
+  .then(() => {
+    nameInput.value = '';
+    renderPresets();
+    showToast(`💾 Preset "${name}" sauvegardé !`);
+  })
+  .catch(() => showToast('⚠️ Erreur — serveur injoignable'));
+}
+
+function loadPreset(i) {
+  const p = _presetsCache[i];
+  if (!p) return;
+  const sel = document.getElementById('operator');
+  // S'assurer que l'opérateur est dans la liste
+  const opts = MODE_OPERATORS['bus'];
+  const exists = opts.some(o => o.v === p.operator);
+  if (!exists) {
+    const exists2 = Array.from(sel.options).some(o => o.value === p.operator);
+    if (!exists2) sel.innerHTML += `<option value="${escHtml(p.operator)}">${escHtml(p.operator)}</option>`;
+  }
+  sel.value = p.operator;
+  document.getElementById('trainNumber').value = p.trainNumber || '';
+  document.getElementById('origin').value      = p.origin      || '';
+  document.getElementById('terminus').value    = p.terminus    || '';
+  document.getElementById('eta').value         = p.eta         || '';
+  state.stops = (p.stops || []).map(s => ({ ...s }));
+  renderStops(state.stops);
+  markEditing();
+  showToast(`✓ Preset "${p.name}" chargé !`);
+}
+
+function deletePreset(i) {
+  const p = _presetsCache[i];
+  const name = p?.name || '';
+  if (!confirm(`Supprimer le preset "${name}" ?`)) return;
+  fetch(`http://localhost:3000/api/presets/${i}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(() => {
+      renderPresets();
+      showToast('🗑️ Preset supprimé');
+    })
+    .catch(() => showToast('⚠️ Erreur — serveur injoignable'));
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+</script>

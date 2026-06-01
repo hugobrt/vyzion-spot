@@ -1025,6 +1025,201 @@
             color: rgba(255,255,255,0.25);
             margin-top: -2px;
         }
+
+        /* ── COMPTEUR SESSION ── */
+        #session-timer {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(13,13,20,0.85);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            backdrop-filter: blur(12px);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            transition: border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+            opacity: 0;
+            pointer-events: none;
+            animation: fadeDown 0.5s ease 0.5s forwards;
+        }
+        #session-timer.visible { opacity: 1; pointer-events: auto; }
+        #session-timer.warning {
+            border-color: rgba(255,179,0,0.4);
+            color: rgba(255,179,0,0.8);
+            box-shadow: 0 0 12px rgba(255,179,0,0.1);
+        }
+        #session-timer.danger {
+            border-color: rgba(255,60,60,0.5);
+            color: rgba(255,60,60,0.9);
+            box-shadow: 0 0 14px rgba(255,60,60,0.15);
+            animation: timerPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes timerPulse {
+            0%,100% { box-shadow: 0 0 8px rgba(255,60,60,0.15); }
+            50%      { box-shadow: 0 0 20px rgba(255,60,60,0.4); }
+        }
+        .timer-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: rgba(0,200,83,0.8);
+            transition: background 0.4s ease;
+            animation: dotPulseG 1.6s ease-in-out infinite;
+        }
+        #session-timer.warning .timer-dot { background: rgba(255,179,0,0.9); animation: none; }
+        #session-timer.danger  .timer-dot { background: rgba(255,60,60,0.9); animation: none; }
+
+        /* ── OVERLAY EXPIRATION ── */
+        #expire-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(0px);
+            background: rgba(0,0,0,0);
+            pointer-events: none;
+            transition: backdrop-filter 0.8s ease, background 0.8s ease;
+        }
+        #expire-overlay.show {
+            backdrop-filter: blur(14px);
+            background: rgba(0,0,0,0.4);
+            pointer-events: auto;
+        }
+        #expire-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 32px 40px;
+            background: rgba(13,13,20,0.95);
+            border: 1px solid rgba(255,179,0,0.25);
+            border-radius: 24px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.8);
+            opacity: 0;
+            transform: scale(0.92) translateY(12px);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.4,0.64,1);
+        }
+        #expire-overlay.show #expire-box {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        .expire-icon { font-size: 32px; }
+        .expire-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+            text-align: center;
+        }
+        #expire-countdown {
+            font-size: 36px;
+            font-weight: 800;
+            color: rgba(255,179,0,0.9);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            letter-spacing: 2px;
+        }
+        #expire-countdown.red { color: rgba(255,60,60,0.9); }
+        #expire-btn {
+            padding: 12px 28px;
+            background: rgba(255,179,0,0.15);
+            border: 1px solid rgba(255,179,0,0.4);
+            border-radius: 12px;
+            color: rgba(255,179,0,0.9);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #expire-btn:hover { background: rgba(255,179,0,0.25); transform: scale(1.03); }
+
+        /* ── BADGE LIVE ── */
+        .live-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: rgba(255,40,40,0.15);
+            border: 1px solid rgba(255,40,40,0.4);
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: rgba(255,80,80,0.95);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.4,0.64,1);
+        }
+        .live-badge.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .live-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: livePulse 1.2s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* ── NOW PLAYING ── */
+        .now-playing {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: rgba(29,185,84,0.06);
+            border: 1px solid rgba(29,185,84,0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 40px;
+            transition: opacity 0.3s ease;
+        }
+        .now-playing.hidden { opacity: 0; pointer-events: none; }
+        .np-disc {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(29,185,84,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+            animation: npSpin 4s linear infinite paused;
+        }
+        .np-disc.playing { animation-play-state: running; }
+        @keyframes npSpin { to { transform: rotate(360deg); } }
+        .np-info { flex: 1; min-width: 0; }
+        .np-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .np-artist {
+            font-size: 10px;
+            color: rgba(255,255,255,0.35);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .np-idle {
+            font-size: 11px;
+            color: rgba(255,255,255,0.2);
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -1075,14 +1270,22 @@
                 <div class="icon">🎵</div>
                 <div class="card-title">Gestion Spotify</div>
                 <div class="card-desc">Authentification, configuration de l'API et suivi de la musique en cours pour l'overlay.</div>
+                <div class="now-playing hidden" id="now-playing">
+                    <div class="np-disc" id="np-disc">🎵</div>
+                    <div class="np-info">
+                        <div class="np-title" id="np-title">—</div>
+                        <div class="np-artist" id="np-artist">—</div>
+                    </div>
+                </div>
             </a>
 
             <!-- Carte Train : dossier avec split -->
-            <div class="card-folder train" id="trainFolder">
+            <div class="card-folder train" id="trainFolder" style="position:relative;">
                 <div class="folder-tab"></div>
 
                 <!-- Vue par défaut (repos) -->
                 <div class="folder-default">
+                    <div id="live-badge" class="live-badge"><span class="live-dot"></span>LIVE</div>
                     <div class="icon" style="font-size:40px;margin-bottom:16px;transition:transform 0.3s">🚂</div>
                     <div class="card-title" style="font-size:18px;font-weight:700;color:#3897ff;margin-bottom:8px;">Régie Train & Bus</div>
                     <div class="card-desc" style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Contrôle de l'overlay des gares, gestion des arrêts, des annonces voyageurs et des presets.</div>
@@ -1384,60 +1587,104 @@
         });
     
         // ── LOCK intégré au splash ──
-        const LOCK_HASH = '8829411d3daacd6ba364e96fb6020b647d0c4072ddbdf8c36eca7ebf945ae7fa'; // "password" — change ici
+        const LOCK_HASH = '8829411d3daacd6ba364e96fb6020b647d0c4072ddbdf8c36eca7ebf945ae7fa';
         // Générer ton hash : https://emn178.github.io/online-tools/sha256.html
+
+        const SESSION_DURATION = 2 * 60 * 1000; // 2 minutes
+        const MAX_ATTEMPTS = 3;
+        const LOCKOUT_DURATION = 10 * 1000; // 10 secondes
 
         async function sha256(str) {
             const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
             return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
         }
 
+        // ── Gestion session avec expiration ──
+        function isSessionValid() {
+            const ts = sessionStorage.getItem('hub_unlocked_at');
+            if (!ts) return false;
+            return (Date.now() - parseInt(ts)) < SESSION_DURATION;
+        }
+        function setSession() {
+            sessionStorage.setItem('hub_unlocked', '1');
+            sessionStorage.setItem('hub_unlocked_at', Date.now().toString());
+        }
+
+        // ── Gestion tentatives / blocage ──
+        let attempts = 0;
+        let lockedUntil = 0;
+
+        function isLockedOut() { return Date.now() < lockedUntil; }
+
+        function getRemainingLockout() { return Math.ceil((lockedUntil - Date.now()) / 1000); }
+
         async function checkPassword() {
-            const inp = document.getElementById('lock-input');
-            const err = document.getElementById('lock-error');
-            const lockIcon = document.getElementById('lock-icon');
-            const submit = document.getElementById('lock-submit');
+            const inp     = document.getElementById('lock-input');
+            const err     = document.getElementById('lock-error');
+            const lockIcon= document.getElementById('lock-icon');
+            const submit  = document.getElementById('lock-submit');
             if (!inp || !inp.value) return;
+
+            // Vérif blocage
+            if (isLockedOut()) {
+                if (err) { err.textContent = `Bloqué ${getRemainingLockout()}s…`; err.classList.add('show'); }
+                return;
+            }
+
             const hash = await sha256(inp.value);
             if (hash === LOCK_HASH) {
-                // Désactiver input pendant l'anim
+                attempts = 0;
                 inp.disabled = true;
                 if (submit) submit.disabled = true;
                 inp.classList.add('success');
                 if (err) err.classList.remove('show');
-                // Anim cadenas déverrouillé
-                if (lockIcon) {
-                    lockIcon.textContent = '🔓';
-                    lockIcon.classList.add('unlocked');
-                }
-                // 0.5s anim cadenas → puis révéler le hub derrière
+                if (lockIcon) { lockIcon.textContent = '🔓'; lockIcon.classList.add('unlocked'); }
+
                 setTimeout(() => {
-                    sessionStorage.setItem('hub_unlocked', '1');
+                    setSession();
                     const splash = document.getElementById('splash');
                     if (!splash) return;
-
-                    // 1. Le fond noir devient transparent → hub apparaît derrière
                     splash.style.transition = 'background 0.6s ease';
                     splash.style.background = 'transparent';
-
-                    // 2. Les éléments du lock s'effacent légèrement après
                     setTimeout(() => {
                         const sl = document.getElementById('splash-lock');
                         if (sl) { sl.style.transition = 'opacity 0.5s ease, transform 0.5s ease'; sl.style.opacity = '0'; sl.style.transform = 'translateY(-10px) scale(0.95)'; }
                     }, 300);
-
-                    // 3. Supprimer le splash complètement
-                    setTimeout(() => {
-                        splash.remove();
-                    }, 900);
+                    setTimeout(() => { splash.remove(); startSessionTimer(); }, 900);
                 }, 500);
+
             } else {
+                attempts++;
+                inp.value = '';
                 inp.classList.remove('error');
                 void inp.offsetWidth;
                 inp.classList.add('error');
-                if (err) { err.textContent = 'Mot de passe incorrect'; err.classList.add('show'); }
-                inp.value = '';
-                setTimeout(() => { inp.classList.remove('error'); if(err) err.classList.remove('show'); }, 2000);
+
+                if (attempts >= MAX_ATTEMPTS) {
+                    lockedUntil = Date.now() + LOCKOUT_DURATION;
+                    attempts = 0;
+                    inp.disabled = true;
+                    if (submit) submit.disabled = true;
+                    // Countdown dans le placeholder du champ
+                    let remaining = LOCKOUT_DURATION / 1000;
+                    inp.placeholder = `⏳ ${remaining}s`;
+                    if (err) { err.classList.remove('show'); err.textContent = ''; }
+                    const countdown = setInterval(() => {
+                        remaining--;
+                        inp.placeholder = remaining > 0 ? `⏳ ${remaining}s` : '••••••';
+                        if (remaining <= 0) {
+                            clearInterval(countdown);
+                            inp.disabled = false;
+                            if (submit) submit.disabled = false;
+                            inp.classList.remove('error');
+                            inp.focus();
+                        }
+                    }, 1000);
+                } else {
+                    const left = MAX_ATTEMPTS - attempts;
+                    if (err) { err.textContent = `Incorrect — ${left} essai${left > 1 ? 's' : ''} restant`; err.classList.add('show'); }
+                    setTimeout(() => { inp.classList.remove('error'); if(err) err.classList.remove('show'); }, 2000);
+                }
             }
         }
 
@@ -1446,72 +1693,53 @@
             if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
         });
 
-        // Gérer le splash selon l'état auth
+        // ── Splash + session ──
         (function() {
             const splash = document.getElementById('splash');
             if (!splash) return;
-            if (sessionStorage.getItem('hub_unlocked')) {
-                // Déjà auth → laisser l'animation normale se terminer
+            if (isSessionValid()) {
+                // Session valide → splash normal puis hub direct
                 splash.addEventListener('animationend', function(e) {
-                    if (e.animationName === 'splashFadeOut') this.remove();
+                    if (e.animationName === 'splashFadeOut') { this.remove(); startSessionTimer(); }
                 });
             } else {
-                // Bloquer le splash après la fin de la barre (2.6s) et afficher le champ mdp
+                // Session expirée ou absente → bloquer et afficher le lock
+                sessionStorage.removeItem('hub_unlocked');
+                sessionStorage.removeItem('hub_unlocked_at');
                 splash.addEventListener('animationend', function(e) {
                     if (e.animationName === 'splashFadeOut') this.remove();
                 });
                 setTimeout(() => {
-                    // Figer le splash (supprimer l'animation fadeout en cours)
                     splash.style.animationName = 'none';
                     splash.style.opacity = '1';
-                    // Transition stylée : logo monte + disparaît, cadenas descend + apparaît
                     const barWrap = document.getElementById('splash-bar-wrap');
                     const logo = document.getElementById('splash-logo');
-                    // Logo : monte et s'estompe
-                    if (logo) {
-                        logo.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)';
-                        logo.style.opacity = '0';
-                        logo.style.transform = 'translateY(-18px) scale(0.92)';
-                    }
-                    // Barre : simple fade
-                    if (barWrap) {
-                        barWrap.style.transition = 'opacity 0.35s ease';
-                        barWrap.style.opacity = '0';
-                    }
+                    if (barWrap) { barWrap.style.transition = 'opacity 0.35s ease'; barWrap.style.opacity = '0'; }
+                    if (logo)    { logo.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)'; logo.style.opacity = '0'; logo.style.transform = 'translateY(-18px) scale(0.92)'; }
                     setTimeout(() => {
                         if (barWrap) barWrap.style.display = 'none';
                         if (logo)    logo.style.display    = 'none';
-                        // Cadenas + champ : apparaît depuis le bas avec rebond
                         const sl = document.getElementById('splash-lock');
                         if (sl) {
                             sl.style.transform = 'translateY(16px)';
                             sl.classList.add('visible');
                             showForgotBtn();
-                            // léger délai pour que le translateY soit appliqué avant la transition
                             requestAnimationFrame(() => {
                                 sl.style.transition = 'opacity 0.45s cubic-bezier(0.34,1.4,0.64,1), transform 0.45s cubic-bezier(0.34,1.4,0.64,1), max-height 0.4s ease';
                                 sl.style.transform = 'translateY(0)';
                             });
                         }
-                        setTimeout(() => {
-                            const inp = document.getElementById('lock-input');
-                            if (inp) inp.focus();
-                        }, 300);
+                        setTimeout(() => { const inp = document.getElementById('lock-input'); if (inp) inp.focus(); }, 300);
                     }, 420);
-                    setTimeout(() => {
-                        const inp = document.getElementById('lock-input');
-                        if (inp) inp.focus();
-                    }, 300);
                 }, 2600);
             }
         })();
 
-    
         // ── MOT DE PASSE OUBLIÉ ──
         // Rien en clair ici — tout est hashé SHA-256
         const SECRET_HASH = 'e5e53c784d5d49de1cabb6e904bf3380026aadcb9769775a268dd304dd9aa2df';
         // Indice affiché si bonne réponse secrète (ne révèle pas le vrai mdp)
-        const PASSWORD_HINT = 'la date d'anniv de savanna 🎂';
+        const PASSWORD_HINT = 'la date de naissance de savanna 🎂';
 
         function openForgot() {
             document.getElementById('forgot-input').value = '';
@@ -1552,6 +1780,256 @@
             }, 500);
         }
 
+    
+        // ── SESSION TIMER ──
+        const SESSION_MS   = 1 * 60 * 1000; // 1 min sur la page
+        const SESSION_REFRESH_MS = 1 * 60 * 1000; // 1 min si refresh (identique)
+        const GRACE_MS     = 10 * 1000; // 10s pour dire "je suis là"
+
+        let sessionEndTime = 0;
+        let timerInterval  = null;
+        let expireTimeout  = null;
+        let graceInterval  = null;
+
+        function startSessionTimer() {
+            const timer = document.getElementById('session-timer');
+            const timerTxt = document.getElementById('timer-text');
+            if (!timer) return;
+            timer.classList.add('visible');
+
+            sessionEndTime = Date.now() + SESSION_MS;
+            sessionStorage.setItem('hub_unlocked_at', (Date.now() - (SESSION_MS - SESSION_REFRESH_MS)).toString());
+            // Afficher immédiatement 1:00
+            if (timerTxt) timerTxt.textContent = 'Session : 1:00';
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const remaining = sessionEndTime - Date.now();
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    showExpireOverlay();
+                    return;
+                }
+                const mins = Math.floor(remaining / 60000);
+                const secs = Math.floor((remaining % 60000) / 1000);
+                timerTxt.textContent = `Session : ${mins}:${secs.toString().padStart(2,'0')}`;
+
+                // Couleurs selon temps restant
+                timer.classList.remove('warning','danger');
+                if (remaining < 15000)     timer.classList.add('danger');
+                else if (remaining < 40000) timer.classList.add('warning');
+            }, 1000);
+        }
+
+        function showExpireOverlay() {
+            const ov = document.getElementById('expire-overlay');
+            const cd = document.getElementById('expire-countdown');
+            const timer = document.getElementById('session-timer');
+            if (!ov) return;
+            ov.classList.add('show');
+            if (timer) timer.classList.remove('visible');
+
+            let grace = GRACE_MS / 1000;
+            if (cd) cd.textContent = grace;
+
+            clearInterval(graceInterval);
+            graceInterval = setInterval(() => {
+                grace--;
+                if (cd) {
+                    cd.textContent = grace;
+                    if (grace <= 5) cd.classList.add('red');
+                }
+                if (grace <= 0) {
+                    clearInterval(graceInterval);
+                    lockHub();
+                }
+            }, 1000);
+        }
+
+        function renewSession() {
+            clearInterval(graceInterval);
+            const ov = document.getElementById('expire-overlay');
+            const cd = document.getElementById('expire-countdown');
+            if (ov) ov.classList.remove('show');
+            if (cd) { cd.textContent = '10'; cd.classList.remove('red'); }
+            startSessionTimer();
+        }
+
+        function lockHub() {
+            sessionStorage.removeItem('hub_unlocked');
+            sessionStorage.removeItem('hub_unlocked_at');
+
+            // Cacher le timer
+            const timer = document.getElementById('session-timer');
+            if (timer) timer.classList.remove('visible');
+            const ov = document.getElementById('expire-overlay');
+            if (ov) ov.classList.remove('show');
+
+            // Remettre le fond noir par-dessus le hub
+            let lockOverlay = document.getElementById('relock-overlay');
+            if (!lockOverlay) {
+                lockOverlay = document.createElement('div');
+                lockOverlay.id = 'relock-overlay';
+                lockOverlay.style.cssText = `
+                    position:fixed;inset:0;z-index:9998;
+                    background:#0d0d14;
+                    display:flex;flex-direction:column;
+                    align-items:center;justify-content:center;
+                    gap:16px;
+                    opacity:0;transition:opacity 0.5s ease;
+                    font-family:'Space Grotesk',sans-serif;
+                `;
+                lockOverlay.innerHTML = `
+                    <div style="font-size:38px;font-weight:800;letter-spacing:-1px;
+                        background:linear-gradient(135deg,#fff 0%,#3897ff 40%,#1db954 70%,#a78bfa 100%);
+                        background-size:300% 300%;
+                        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                        animation:lockTitleGradient 3s ease-in-out infinite alternate;">Vyzion</div>
+                    <div style="font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-top:-8px;">Protected Access</div>
+                    <div style="font-size:28px;margin-top:4px;" id="relock-icon">🔒</div>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:4px;">
+                        <div style="display:flex;gap:10px;">
+                            <input type="password" id="relock-input" placeholder="••••••" maxlength="32" autocomplete="off"
+                                style="padding:11px 18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+                                border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;
+                                letter-spacing:4px;text-align:center;outline:none;width:180px;
+                                caret-color:rgba(255,179,0,0.8);" />
+                            <button onclick="checkRelockPassword()" style="width:38px;height:38px;border-radius:10px;
+                                background:rgba(255,179,0,0.15);border:1px solid rgba(255,179,0,0.3);
+                                color:rgba(255,179,0,0.9);font-size:16px;cursor:pointer;display:flex;
+                                align-items:center;justify-content:center;">→</button>
+                        </div>
+                        <div id="relock-error" style="font-size:11px;color:rgba(255,60,60,0.7);height:14px;"></div>
+                    </div>
+                `;
+                document.body.appendChild(lockOverlay);
+                // Event Enter
+                setTimeout(() => {
+                    const ri = document.getElementById('relock-input');
+                    if (ri) {
+                        ri.addEventListener('keydown', e => { if (e.key === 'Enter') checkRelockPassword(); });
+                        ri.focus();
+                    }
+                }, 600);
+            }
+
+            // Fade in du fond noir
+            requestAnimationFrame(() => {
+                lockOverlay.style.opacity = '0';
+                document.body.appendChild(lockOverlay);
+                requestAnimationFrame(() => {
+                    lockOverlay.style.opacity = '1';
+                    setTimeout(() => {
+                        const ri = document.getElementById('relock-input');
+                        if (ri) ri.focus();
+                    }, 500);
+                });
+            });
+        }
+
+        let relockAttempts = 0;
+        let relockLockedUntil = 0;
+
+        async function checkRelockPassword() {
+            const inp = document.getElementById('relock-input');
+            const err = document.getElementById('relock-error');
+            const icon = document.getElementById('relock-icon');
+            if (!inp || !inp.value) return;
+
+            if (Date.now() < relockLockedUntil) {
+                const s = Math.ceil((relockLockedUntil - Date.now()) / 1000);
+                if (err) err.textContent = `Bloqué ${s}s…`;
+                return;
+            }
+
+            const hash = await sha256(inp.value);
+            if (hash === LOCK_HASH) {
+                relockAttempts = 0;
+                inp.disabled = true;
+                inp.style.borderColor = 'rgba(0,200,83,0.6)';
+                if (icon) { icon.textContent = '🔓'; }
+                setTimeout(() => {
+                    setSession();
+                    const lo = document.getElementById('relock-overlay');
+                    if (lo) { lo.style.transition = 'opacity 0.6s ease'; lo.style.opacity = '0'; }
+                    setTimeout(() => {
+                        if (lo) lo.remove();
+                        startSessionTimer();
+                    }, 650);
+                }, 500);
+            } else {
+                relockAttempts++;
+                inp.value = '';
+                inp.style.animation = 'none'; void inp.offsetWidth;
+                inp.style.animation = 'lockShake 0.4s both';
+                if (relockAttempts >= 3) {
+                    relockLockedUntil = Date.now() + 10000;
+                    relockAttempts = 0;
+                    inp.disabled = true;
+                    if (err) err.textContent = '';
+                    let r = 10;
+                    inp.placeholder = `⏳ ${r}s`;
+                    const cd = setInterval(() => {
+                        r--;
+                        inp.placeholder = r > 0 ? `⏳ ${r}s` : '••••••';
+                        if (r <= 0) {
+                            clearInterval(cd);
+                            inp.disabled = false;
+                            inp.focus();
+                        }
+                    }, 1000);
+                } else {
+                    const left = 3 - relockAttempts;
+                    if (err) err.textContent = `Incorrect — ${left} essai${left>1?'s':''} restant`;
+                    setTimeout(() => { if(err) err.textContent = ''; }, 2000);
+                }
+            }
+        }
+
+        // Démarrer le timer dès que le hub est déverrouillé
+        // (appelé après unlock réussi ou session valide)
+
+    
+        // ── BADGE LIVE + NOW PLAYING ──
+        async function updateLiveAndMusic() {
+            // Badge LIVE
+            try {
+                const res  = await fetch(BASE + '/api/state', { signal: AbortSignal.timeout(3000) });
+                const data = await res.json();
+                const badge = document.getElementById('live-badge');
+                if (badge) {
+                    if (data.power) badge.classList.add('show');
+                    else            badge.classList.remove('show');
+                }
+            } catch {}
+
+            // Now Playing Spotify
+            try {
+                const res2 = await fetch(BASE + '/api/status', { signal: AbortSignal.timeout(3000) });
+                const data2 = await res2.json();
+                const np     = document.getElementById('now-playing');
+                const disc   = document.getElementById('np-disc');
+                const title  = document.getElementById('np-title');
+                const artist = document.getElementById('np-artist');
+
+                if (data2.track && data2.track.title) {
+                    if (np) np.classList.remove('hidden');
+                    if (title)  title.textContent  = data2.track.title;
+                    if (artist) artist.textContent = data2.track.artist || '—';
+                    if (disc) {
+                        disc.textContent = data2.track.isPlaying ? '▶' : '⏸';
+                        if (data2.track.isPlaying) disc.classList.add('playing');
+                        else disc.classList.remove('playing');
+                    }
+                } else {
+                    if (np) np.classList.add('hidden');
+                }
+            } catch {}
+        }
+
+        updateLiveAndMusic();
+        setInterval(updateLiveAndMusic, 5000);
+
     </script>
 
     <!-- ── MOT DE PASSE OUBLIÉ ── -->
@@ -1559,12 +2037,28 @@
         <div id="forgot-box">
             <div style="font-size:28px">🤔</div>
             <div class="forgot-question">Quelle est ta date de naissance ?</div>
-            <input type="text" id="forgot-input" placeholder="ecrire ici" maxlength="10" autocomplete="off" />
+            <input type="text" id="forgot-input" placeholder="..." maxlength="10" autocomplete="off" />
             <div id="forgot-result"></div>
             <div class="forgot-actions">
                 <button id="forgot-submit" onclick="checkSecret()">Valider</button>
                 <button id="forgot-cancel" onclick="closeForgot()">Annuler</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ── COMPTEUR SESSION ── -->
+    <div id="session-timer">
+        <span class="timer-dot"></span>
+        <span id="timer-text">Session : 2:00</span>
+    </div>
+
+    <!-- ── OVERLAY EXPIRATION ── -->
+    <div id="expire-overlay">
+        <div id="expire-box">
+            <div class="expire-icon">⏳</div>
+            <div class="expire-title">Session expirée<br><span style="font-size:12px;color:rgba(255,255,255,0.35)">Tu es encore là ?</span></div>
+            <div id="expire-countdown">10</div>
+            <button id="expire-btn" onclick="renewSession()">Je suis là ✓</button>
         </div>
     </div>
 </body>

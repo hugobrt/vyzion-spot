@@ -6,11 +6,9 @@ const urlMod   = require('url');
 const qs       = require('querystring');
 const { WebSocketServer } = require('ws');
 
-// Port automatiquement injecté par Render
 const PORT         = process.env.PORT || 3001;
 const SCOPES       = 'user-read-currently-playing user-read-playback-state';
 
-// Fichiers de stockage sur le serveur
 const CONFIG_FILE  = path.join(__dirname, 'spotify-config.json');
 const PRESETS_FILE = path.join(__dirname, 'presets.json');
 
@@ -40,20 +38,29 @@ const MIME = {
   '.json':'application/json', '.png':'image/png', '.svg':'image/svg+xml'
 };
 
-// ── REQUÊTES VERS LES SERVEURS OFFICIELS DE SPOTIFY ──
+// ── REQUÊTES VERS LES VRAIS SERVEURS SPOTIFY ──
 function spotifyPost(pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
-    const req = https.request({ hostname: 'api.spotify.com', path: pathname, method: 'POST',
+    const req = https.request({ 
+      hostname: 'accounts.spotify.com', // Serveur d'authentification officiel
+      path: pathname, 
+      method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(b), ...headers }
     }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{ res(JSON.parse(d)); }catch(e){ res({}); } }); });
     req.on('error',rej); req.write(b); req.end();
   });
 }
 
+// Correction ici : l'API de lecture utilise api.spotify.com
 function spotifyGet(pathname, headers={}) {
   return new Promise((res,rej) => {
-    const req = https.request({ hostname: 'api.spotify.com', path: pathname, method: 'GET', headers }, r => {
+    const req = https.request({ 
+      hostname: 'api.spotify.com', // Serveur API officiel
+      path: pathname, 
+      method: 'GET', 
+      headers 
+    }, r => {
       let d=''; r.on('data',c=>d+=c);
       r.on('end',()=>{
         if (r.statusCode === 204) return res({ status: 204, data: null });
@@ -118,7 +125,6 @@ const server = http.createServer(async (req,res) => {
   const baseUrl = `https://${req.headers.host}`;
   const redirectUri = `${baseUrl}/callback`;
 
-  // ── ROUTE CONFIGURATION & LOGIN SPOTIFY ──
   if (pathname === '/auth') {
     const p = new URLSearchParams({ response_type: 'code', client_id: cfg.clientId, scope: SCOPES, redirect_uri: redirectUri, show_dialog: 'true' });
     res.writeHead(302, { Location: `https://accounts.spotify.com/authorize?${p.toString()}` });
@@ -160,11 +166,10 @@ const server = http.createServer(async (req,res) => {
     }); return;
   }
 
-  // ── ROUTES API TRAIN / BUS (OPTIMISÉES STREAM DECK & CONSOLE) ──
+  // ── ROUTES API TRAIN / BUS ──
   if (pathname === '/api/state' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(state));
   }
-  
   if (pathname === '/api/state' && req.method === 'POST') {
     let body = ''; req.on('data', d => body += d);
     req.on('end', () => {
@@ -174,48 +179,41 @@ const server = http.createServer(async (req,res) => {
 
   if (pathname === '/api/power') {
     if (req.method === 'POST') {
-      let body = ''; req.on('data', d => body += d);
-      req.on('end', () => {
-        try { const { power } = JSON.parse(body); powered = !!power; broadcast({ power: powered }); } catch(e){}
-      });
-    } else {
-      powered = !powered; broadcast({ power: powered });
-    }
-    console.log(`🔌 [STREAM DECK] Bouton Power -> URL : ${baseUrl}/api/power (État actuel : ${powered})`);
+      let body = ''; req.on('data', d => body += d); req.on('end', () => { try { const { power } = JSON.parse(body); powered = !!power; broadcast({ power: powered }); } catch(e){} });
+    } else { powered = !powered; broadcast({ power: powered }); }
+    console.log(`🔌 [STREAM DECK] Power -> URL : ${baseUrl}/api/power`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, power: powered }));
   }
 
   if (pathname === '/api/depart') {
     state.departed = true; state.pax = false; state.fin = false; broadcast(state);
-    console.log(`🚂 [STREAM DECK] Bouton Départ -> URL : ${baseUrl}/api/depart`);
+    console.log(`🚂 [STREAM DECK] Départ -> URL : ${baseUrl}/api/depart`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/fin') {
     state.fin = true; state.pax = false; broadcast(state);
-    console.log(`🏁 [STREAM DECK] Bouton Terminus -> URL : ${baseUrl}/api/fin`);
+    console.log(`🏁 [STREAM DECK] Terminus -> URL : ${baseUrl}/api/fin`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/pax') {
     state.pax = !state.pax; broadcast(state);
-    console.log(`👥 [STREAM DECK] Bouton Annonce PAX -> URL : ${baseUrl}/api/pax (État : ${state.pax})`);
+    console.log(`👥 [STREAM DECK] Annonce PAX -> URL : ${baseUrl}/api/pax`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, pax: state.pax }));
   }
   
   if (pathname === '/api/next') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur !== -1 && cur + 1 < state.stops.length) { state.stops[cur].status = 'passed'; state.stops[cur + 1].status = 'current'; }
-    broadcast(state);
-    console.log(`⏭️ [STREAM DECK] Gare Suivante -> URL : ${baseUrl}/api/next`);
+    broadcast(state); console.log(`⏭️ [STREAM DECK] Suivante -> URL : ${baseUrl}/api/next`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/prev') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur > 0) { state.stops[cur].status = 'upcoming'; state.stops[cur - 1].status = 'current'; }
-    broadcast(state);
-    console.log(`⏮️ [STREAM DECK] Gare Précédente -> URL : ${baseUrl}/api/prev`);
+    broadcast(state); console.log(`⏮️ [STREAM DECK] Précédente -> URL : ${baseUrl}/api/prev`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
@@ -229,7 +227,6 @@ const server = http.createServer(async (req,res) => {
         const data = JSON.parse(body);
         if (Array.isArray(data)) { savePresets(data); } 
         else if (data && typeof data === 'object' && data.name) { const presets = loadPresets(); presets.push(data); savePresets(presets); } 
-        else { res.writeHead(400); return res.end('Bad payload'); }
         res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, presets: loadPresets() }));
       } catch(e) { res.writeHead(400); res.end('Bad JSON'); }
     }); return;
@@ -244,33 +241,32 @@ const server = http.createServer(async (req,res) => {
 
   // ── SERVIR LES PAGES DU HUB ──
   let fp;
-  if (pathname === '/')                          fp = path.join(__dirname, 'index.html');
+  if (pathname === '/' || pathname === '/train') fp = path.join(__dirname, 'dashboard.html');
+  else if (pathname === '/train-overlay')        fp = path.join(__dirname, 'overlay.html');
   else if (pathname === '/dashboard')            fp = path.join(__dirname, 'nowplaying-dashboard.html');
   else if (pathname === '/overlay')              fp = path.join(__dirname, 'nowplaying-overlay.html');
-  else if (pathname === '/train' || pathname === '/train-dashboard') fp = path.join(__dirname, 'dashboard.html');
-  else if (pathname === '/train-overlay')        fp = path.join(__dirname, 'overlay.html');
   else                                           fp = path.join(__dirname, pathname);
 
-  const ext = path.extname(fp) || '.html';
+  const ext = path.extname(fp);
+  if (!ext && fs.existsSync(fp + '.html')) fp += '.html';
+
   fs.readFile(fp, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' }); res.end(data);
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'text/plain' }); res.end(data);
   });
 });
 
-// ── WEBSOCKETS PRODUCTION ──
+// ── WEBSOCKETS ──
 const wss = new WebSocketServer({ server });
 function broadcast(data) {
   const m = JSON.stringify(data);
   wss.clients.forEach(c => { if (c.readyState === 1) c.send(m); });
 }
-
 wss.on('connection', ws => {
   ws.send(JSON.stringify({ type: 'init', track: currentTrack, connected: isConnected }));
   ws.send(JSON.stringify({ power: powered }));
   if (powered) ws.send(JSON.stringify(state));
 });
-
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
-server.listen(PORT, () => { console.log(`🚀 SERVEUR DE PRODUCTION ACTIF SUR LE PORT ${PORT}`); });
+server.listen(PORT, () => { console.log(`🚀 SERVEUR PRÊT SUR LE PORT ${PORT}`); });

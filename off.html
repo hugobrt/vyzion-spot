@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vyzion — Déconnexion</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0f;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .logo {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: -3px;
+      background: linear-gradient(135deg, #fff 0%, #3897ff 40%, #1db954 70%, #a78bfa 100%);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradShift 4s ease-in-out infinite alternate, logoIn 1s cubic-bezier(.34,1.4,.64,1) both;
+      cursor: pointer;
+      user-select: none;
+    }
+    .state {
+      margin-top: 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.28);
+      opacity: 0;
+      animation: fadeUp .6s ease 2s forwards;
+    }
+    .line {
+      width: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(56,151,255,.5), rgba(29,185,84,.4), transparent);
+      margin: 18px auto;
+      animation: lineGrow .5s ease 2.5s forwards;
+    }
+    .reconnect {
+      opacity: 0;
+      pointer-events: none;
+      text-decoration: none;
+      display: inline-block;
+      padding: 11px 22px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.8);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      background: rgba(255,255,255,.04);
+      backdrop-filter: blur(10px);
+      transition: background .2s, border-color .2s, transform .2s, color .2s;
+      animation: fadeUp .6s ease 3s forwards;
+    }
+    .reconnect:hover {
+      background: rgba(56,151,255,.1);
+      border-color: rgba(56,151,255,.3);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .clock {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      text-align: right;
+      animation: fadeUp .5s ease .3s both;
+    }
+    .clock-time {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: .5px;
+      color: rgba(255,255,255,.75);
+      font-variant-numeric: tabular-nums;
+    }
+    .clock-date {
+      font-size: 10px;
+      color: rgba(255,255,255,.28);
+      text-transform: capitalize;
+      letter-spacing: .5px;
+    }
+    @keyframes gradShift { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+    @keyframes logoIn { from { opacity: 0; transform: scale(.88) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; pointer-events: auto; transform: translateY(0); } }
+    @keyframes lineGrow { to { width: 160px; } }
+
+
+
+
+    /* ECO LEVEL 2 — fond noir + feuille */
+    body { transition: background 1.2s ease; }
+    body.eco-deep { background: #000 !important; }
+    .eco-leaf {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 18px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 400;
+      transition: opacity .8s ease;
+      filter: grayscale(1) brightness(.6);
+    }
+    .eco-leaf.show { opacity: 1; }
+
+    /* ===== MODE ECO ===== */
+    .eco-toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(15,15,20,.95);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .5s ease, transform .5s ease;
+      z-index: 300;
+      white-space: nowrap;
+    }
+    .eco-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .eco-wake {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 300;
+      background: rgba(15,15,20,.95);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 9px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      color: rgba(255,255,255,.5);
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: opacity .5s ease, transform .5s ease, background .2s, color .2s, border-color .2s;
+      white-space: nowrap;
+    }
+    .eco-wake.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+    .eco-wake:hover { background: rgba(56,151,255,.1); border-color: rgba(56,151,255,.25); color: #fff; }
+
+    /* transition douce des éléments en mode eco */
+    .logo { transition: -webkit-text-fill-color .8s ease, filter .8s ease !important; }
+    .state { transition: opacity .8s ease, transform .8s ease, color .8s ease !important; }
+    .line { transition: background .8s ease, opacity .8s ease, margin .8s ease !important; }
+    .clock-time, .clock-date { transition: color .8s ease !important; }
+    .reconnect { transition: color .8s ease, border-color .8s ease, background .8s ease, opacity .8s ease, transform .8s cubic-bezier(.34,1.4,.64,1) !important; }
+
+    body.eco-mode .logo {
+      background: none !important;
+      -webkit-text-fill-color: rgba(255,255,255,.25) !important;
+      filter: none !important;
+      animation: none !important;
+    }
+    body.eco-mode .state { opacity: 0 !important; transform: translateY(-6px); pointer-events:none; }
+    body.eco-mode .line { opacity: 0 !important; margin: 4px auto !important; }
+    body.eco-mode .clock-time { color: rgba(255,255,255,.25) !important; }
+    body.eco-mode .clock-date { color: rgba(255,255,255,.14) !important; }
+    body.eco-mode #greeting, body.eco-mode #since { color: rgba(255,255,255,.1) !important; }
+    body.eco-mode .reconnect {
+      border-color: rgba(255,255,255,.06) !important;
+      color: rgba(255,255,255,.3) !important;
+      background: transparent !important;
+      animation: none !important;
+      transform: translateY(-28px) !important;
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <div id="eco-leaf" style="position:fixed;top:20px;right:20px;font-size:20px;opacity:0;pointer-events:none;z-index:400;transition:opacity .8s ease;">🍃</div>
+
+
+
+  <div class="logo" id="logo">Vyzion</div>
+  <div class="state">Déconnecté &nbsp;·&nbsp; inactif</div>
+
+  <div class="line"></div>
+  <a class="reconnect" href="index.html">↩ Reconnect</a>
+
+  <div class="clock">
+    <div id="greeting" style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.28);margin-bottom:6px;"></div>
+    <div class="clock-time" id="ct">--:--:--</div>
+    <div class="clock-date" id="cd">---</div>
+  </div>
+
+  <div id="since" style="
+    position:fixed;bottom:24px;left:24px;
+    font-size:11px;font-weight:600;letter-spacing:.5px;
+    color:rgba(255,255,255,.22);
+    animation: fadeUp .5s ease 2.5s both;
+    opacity:0;
+  "></div>
+
+  </div>
+
+  <script>
+    // HORLOGE
+    function tick() {
+      const n = new Date();
+      document.getElementById('ct').textContent = n.toLocaleTimeString('fr-FR');
+      document.getElementById('cd').textContent = n.toLocaleDateString('fr-FR', { weekday:'short', day:'2-digit', month:'short' });
+    }
+    tick(); setInterval(tick, 1000);
+
+    // GREETING
+    function updateGreeting() {
+      const h = new Date().getHours();
+      let msg = '';
+      if (h >= 5 && h < 12) msg = 'Bonjour 👋';
+      else if (h >= 12 && h < 18) msg = 'Bonne après-midi 👋';
+      else if (h >= 18 && h < 22) msg = 'Bonsoir 👋';
+      else msg = 'Bonne nuit 🌙';
+      document.getElementById('greeting').textContent = msg;
+    }
+    updateGreeting();
+
+    // DURÉE DEPUIS DÉCONNEXION
+    const disconnectedAt = Date.now();
+    function updateSince() {
+      const elapsed = Math.floor((Date.now() - disconnectedAt) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const el = document.getElementById('since');
+      if (mins < 2) {
+        el.textContent = `🍃 Déconnecté depuis ${mins > 0 ? mins + ' min ' : ''}${secs} s`;
+      } else if (mins < 60) {
+        el.textContent = `Déconnecté depuis ${mins} min`;
+      } else {
+        const h = Math.floor(mins / 60), m = mins % 60;
+        el.textContent = `Déconnecté depuis ${h}h${m > 0 ? m + 'min' : ''}`;
+      }
+    }
+    updateSince();
+    setInterval(updateSince, 1000);
+
+    // MODE ECO
+    const ecoToast = document.createElement('div');
+    ecoToast.className = 'eco-toast';
+    ecoToast.textContent = '⚡ Mode éco activé';
+    document.body.appendChild(ecoToast);
+
+    const ecoWake = document.createElement('button');
+    ecoWake.className = 'eco-wake';
+    ecoWake.textContent = '⚡ Désactiver le mode éco';
+    document.body.appendChild(ecoWake);
+
+    let ecoTimer = null, ecoDeepTimer = null;
+    let ecoActive = false;
+
+    function activateEco() {
+      ecoActive = true;
+      document.body.classList.add('eco-mode');
+      ecoToast.classList.add('show');
+      setTimeout(() => ecoToast.classList.remove('show'), 3000);
+      ecoDeepTimer = setTimeout(() => {
+        document.body.style.transition = 'background 1.2s ease';
+        document.body.style.background = '#000';
+        const leaf = document.getElementById('eco-leaf'); if(leaf) leaf.style.opacity = '1';
+      }, 5000); // eco-deep timer
+    }
+
+    function deactivateEco() {
+      ecoActive = false;
+      document.body.classList.remove('eco-mode');
+      document.body.style.background = '';
+      const leaf2 = document.getElementById('eco-leaf'); if(leaf2) leaf2.style.opacity = '0';
+      clearTimeout(ecoDeepTimer);
+      ecoWake.classList.remove('show');
+      scheduleEco();
+    }
+
+    function scheduleEco() {
+      clearTimeout(ecoTimer);
+      ecoTimer = setTimeout(activateEco, 30000);
+    }
+
+    let wakeHideTimer = null;
+
+    ['mousemove','keydown','touchstart'].forEach(ev =>
+      document.addEventListener(ev, () => {
+        if (!ecoActive) return;
+        ecoWake.classList.add('show');
+        clearTimeout(wakeHideTimer);
+        wakeHideTimer = setTimeout(() => {
+          ecoWake.classList.remove('show');
+        }, 3000);
+      }, { passive: true })
+    );
+
+    ecoWake.addEventListener('click', deactivateEco);
+    scheduleEco();
+
+  </script>
+</body>
+</html>

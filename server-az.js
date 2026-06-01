@@ -266,4 +266,14 @@ wss.on('connection', ws => {
 });
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
+// ── KEEP-ALIVE : auto-ping toutes les 4 minutes pour éviter le sleep Render ──
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+setInterval(() => {
+  const proto = SELF_URL.startsWith('https') ? https : http;
+  proto.get(SELF_URL + '/api/state', res => {
+    console.log(`[keep-alive] ping ${res.statusCode}`);
+    res.resume();
+  }).on('error', e => console.warn('[keep-alive] erreur:', e.message));
+}, 4 * 60 * 1000);
+
 server.listen(PORT, () => { console.log(`🚀 SERVEUR PRÊT SUR LE PORT ${PORT}`); });

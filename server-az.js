@@ -44,7 +44,7 @@ const MIME = {
 function spotifyPost(pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
-    const req = https.request({ hostname: 'accounts.spotify.com', path: pathname, method: 'POST',
+    const req = https.request({ hostname: 'api.spotify.com', path: pathname, method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(b), ...headers }
     }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{ res(JSON.parse(d)); }catch(e){ res({}); } }); });
     req.on('error',rej); req.write(b); req.end();
@@ -115,7 +115,8 @@ const server = http.createServer(async (req,res) => {
 
   const parsed = new urlMod.URL(req.url, `https://${req.headers.host}`);
   const pathname = parsed.pathname;
-  const redirectUri = `https://${req.headers.host}/callback`; // URI de redirection 100% Render
+  const baseUrl = `https://${req.headers.host}`;
+  const redirectUri = `${baseUrl}/callback`;
 
   // ── ROUTE CONFIGURATION & LOGIN SPOTIFY ──
   if (pathname === '/auth') {
@@ -159,35 +160,63 @@ const server = http.createServer(async (req,res) => {
     }); return;
   }
 
-  // ── ROUTES API TRAIN / BUS ──
+  // ── ROUTES API TRAIN / BUS (OPTIMISÉES STREAM DECK & CONSOLE) ──
   if (pathname === '/api/state' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(state));
   }
+  
   if (pathname === '/api/state' && req.method === 'POST') {
     let body = ''; req.on('data', d => body += d);
     req.on('end', () => {
       try { state = JSON.parse(body); broadcast(state); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true })); } catch(e) { res.writeHead(400); res.end('Bad JSON'); }
     }); return;
   }
-  if (pathname === '/api/power' && req.method === 'POST') {
-    let body = ''; req.on('data', d => body += d);
-    req.on('end', () => {
-      try { const { power } = JSON.parse(body); powered = !!power; broadcast({ power: powered }); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, power: powered })); } catch(e) { res.writeHead(400); res.end('Bad JSON'); }
-    }); return;
+
+  if (pathname === '/api/power') {
+    if (req.method === 'POST') {
+      let body = ''; req.on('data', d => body += d);
+      req.on('end', () => {
+        try { const { power } = JSON.parse(body); powered = !!power; broadcast({ power: powered }); } catch(e){}
+      });
+    } else {
+      powered = !powered; broadcast({ power: powered });
+    }
+    console.log(`🔌 [STREAM DECK] Bouton Power -> URL : ${baseUrl}/api/power (État actuel : ${powered})`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, power: powered }));
   }
-  if (pathname === '/api/fin') { state.fin = true; state.pax = false; broadcast(state); res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true })); }
-  if (pathname === '/api/depart') { state.departed = true; state.pax = false; broadcast(state); res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true })); }
-  if (pathname === '/api/pax') { state.pax = !state.pax; broadcast(state); res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, pax: state.pax })); }
+
+  if (pathname === '/api/depart') {
+    state.departed = true; state.pax = false; state.fin = false; broadcast(state);
+    console.log(`🚂 [STREAM DECK] Bouton Départ -> URL : ${baseUrl}/api/depart`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
+  }
+
+  if (pathname === '/api/fin') {
+    state.fin = true; state.pax = false; broadcast(state);
+    console.log(`🏁 [STREAM DECK] Bouton Terminus -> URL : ${baseUrl}/api/fin`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
+  }
+
+  if (pathname === '/api/pax') {
+    state.pax = !state.pax; broadcast(state);
+    console.log(`👥 [STREAM DECK] Bouton Annonce PAX -> URL : ${baseUrl}/api/pax (État : ${state.pax})`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, pax: state.pax }));
+  }
   
   if (pathname === '/api/next') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur !== -1 && cur + 1 < state.stops.length) { state.stops[cur].status = 'passed'; state.stops[cur + 1].status = 'current'; }
-    broadcast(state); res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
+    broadcast(state);
+    console.log(`⏭️ [STREAM DECK] Gare Suivante -> URL : ${baseUrl}/api/next`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
+
   if (pathname === '/api/prev') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur > 0) { state.stops[cur].status = 'upcoming'; state.stops[cur - 1].status = 'current'; }
-    broadcast(state); res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
+    broadcast(state);
+    console.log(`⏮️ [STREAM DECK] Gare Précédente -> URL : ${baseUrl}/api/prev`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/presets' && req.method === 'GET') {
@@ -242,7 +271,6 @@ wss.on('connection', ws => {
   if (powered) ws.send(JSON.stringify(state));
 });
 
-// Ping automatique toutes les 30s (évite que Render coupe la connexion WebSocket)
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
-server.listen(PORT, () => { console.log(`🚀 SERVEUR PRODUCTION PRÊT SUR RENDER (PORT ${PORT})`); });
+server.listen(PORT, () => { console.log(`🚀 SERVEUR DE PRODUCTION ACTIF SUR LE PORT ${PORT}`); });

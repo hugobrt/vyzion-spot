@@ -39,7 +39,7 @@ const MIME = {
   '.json':'application/json', '.png':'image/png', '.svg':'image/svg+xml'
 };
 
-// ── SÉCURISATION DES REQUÊTES SPOTIFY ──
+// ── CONFIGURATION DES REQUÊTES SPOTIFY ──
 function spotifyPost(pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
@@ -113,7 +113,7 @@ async function poll() {
 }
 setInterval(poll, 1000);
 
-// ── ROUTEUR PRINCIPAL (TRAIN & SPOTIFY) ──
+// ── ROUTEUR PRINCIPAL (HUB / TRAIN / SPOTIFY) ──
 const server = http.createServer(async (req,res) => {
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS,DELETE');
@@ -167,7 +167,7 @@ const server = http.createServer(async (req,res) => {
     }); return;
   }
 
-  // ── ROUTES API TRAIN / BUS (Avec logs de contrôle Stream Deck) ──
+  // ── ROUTES API TRAIN / BUS (Pour le Stream Deck) ──
   if (pathname === '/api/state' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(state));
   }
@@ -240,7 +240,7 @@ const server = http.createServer(async (req,res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, presets }));
   }
 
-  // ── DISTRIBUTION DES PAGES ET ASSETS STREAMS ──
+  // ── ROUTAGE DISTRIBUTION DES PAGES (Restauré à l'identique de ton code d'origine) ──
   let fp;
   if (pathname === '/' || pathname === '/train') fp = path.join(__dirname, 'dashboard.html');
   else if (pathname === '/train-overlay')        fp = path.join(__dirname, 'overlay.html');
@@ -257,7 +257,7 @@ const server = http.createServer(async (req,res) => {
   });
 });
 
-// ── WEBSOCKETS HUB (TRAIN + SPOTIFY) ──
+// ── WEBSOCKETS HUB MIGRÉ RENDER ──
 const wss = new WebSocketServer({ server });
 function broadcast(data) {
   const m = JSON.stringify(data);
@@ -269,7 +269,7 @@ wss.on('connection', ws => {
   if (powered) ws.send(JSON.stringify(state));
 });
 
-// Évite que Render coupe la connexion WebSocket (Ping toutes les 30s)
+// Garder le canal de communication WebSockets ouvert sur Render
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
-server.listen(PORT, () => { console.log(`🚀 HUB CONNECTÉ SUR LE PORT ${PORT}`); });
+server.listen(PORT, () => { console.log(`🚀 HUB GLOBAL PRÊT SUR LE PORT ${PORT}`); });

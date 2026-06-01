@@ -2140,13 +2140,10 @@ function _applyTrainState(state) {
   // Cacher bus panel si visible
   const _bpanel = document.getElementById('bus-panel');
   if (_bpanel && _bpanel.style.display !== 'none') { _bpanel.classList.remove('visible'); _bpanel.style.display = 'none'; }
-  // ── Gestion power ──
-  if (state.power === false) {
-    powerOff();
-    return;
-  } else if (state.power === true) {
-    powerOn();
-  }
+  // ── Annuler IMMÉDIATEMENT tous les timers (no-service, idle) ──
+  clearNoServiceTimer();
+  stopIdleCycle();
+  document.getElementById('idle-pill').classList.remove('show');
   // ── Remettre le panel si caché (après fin/no-service) ──
   const panel = document.getElementById('train-panel');
   if (panel.style.display === 'none') {
@@ -2158,9 +2155,6 @@ function _applyTrainState(state) {
   }
 
   // ── Reset global : cacher tous les écrans spéciaux ──
-  document.getElementById('idle-pill').classList.remove('show');
-  stopIdleCycle();
-  clearNoServiceTimer();
   document.getElementById('no-service-screen').classList.remove('show');
   document.getElementById('fin-screen').classList.remove('show');
   document.getElementById('pax-screen').classList.remove('show');
@@ -2294,11 +2288,16 @@ const WS_URL   = `${_wsProto}://${location.host}`;
 const ws = new WebSocket(WS_URL);
 ws.onmessage = e => {
   const data = JSON.parse(e.data);
+  // Ignorer les pings et init Spotify
+  if (data.type === 'ping' || data.type === 'init' || data.type === 'track' || data.type === 'newtrack' || data.type === 'progress') return;
+  // Message power seul
   if ('power' in data && Object.keys(data).length === 1) {
     if (data.power === true  && !_isPowered) { powerOn();  return; }
     if (data.power === false &&  _isPowered) { powerOff(); return; }
-    return; // déjà dans le bon état, on ignore
+    return;
   }
+  // Broadcast state : ne traiter que si l'overlay est allumé
+  if (!_isPowered) return;
   applyState(data);
 };
 ws.onerror   = () => console.warn('WS non connecté');
@@ -2544,10 +2543,15 @@ function showNoService() {
       clearInterval(_nsInterval);
       _nsInterval = null;
       countdown.textContent = '';
-      // Collapse panel → pastille
+      // Collapse panel → pastille UNIQUEMENT si toujours en no-service
+      if (!screen.classList.contains('show')) return;
       const panel = document.getElementById('train-panel');
       panel.classList.add('collapsing');
       setTimeout(() => {
+        if (!screen.classList.contains('show')) {
+          panel.classList.remove('collapsing');
+          return;
+        }
         panel.classList.remove('collapsing');
         panel.style.display = 'none';
         screen.classList.remove('show');
@@ -2598,9 +2602,10 @@ let _busNsTimer     = null;
 let _btTimer = null, _btRAF = null, _btPhase = 0;
 
 function applyBusState(state) {
-  // Power
-  if (state.power === false) { powerOff(); return; }
-  if (state.power === true)  { powerOn(); }
+  // Annuler timers no-service/idle en premier
+  clearNoServiceTimer();
+  stopIdleCycle();
+  document.getElementById('idle-pill').classList.remove('show');
 
   // Cacher train panel si visible
   const tp = document.getElementById('train-panel');

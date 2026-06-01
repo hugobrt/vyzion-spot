@@ -868,7 +868,7 @@ function saveState() {
   // Reset fin-btn car on repart sur pré-départ
   const finBtn = document.getElementById('fin-btn');
   if (finBtn) { finBtn.style.opacity = '0.35'; finBtn.style.pointerEvents = 'none'; }
-  fetch('http://localhost:3000/api/state', {
+  fetch('/api/state'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(s)

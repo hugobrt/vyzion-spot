@@ -2082,7 +2082,7 @@ function runBootSequence() {
           el.classList.remove('active','done');
         });
         // Fetch state et décider quoi afficher
-        fetch('http://localhost:3000/api/state')
+        fetch(`${API}/api/state`)
           .then(r => r.json())
           .then(state => {
             const hasStops = state.stops && state.stops.length > 0;
@@ -2285,45 +2285,23 @@ function _applyTrainState(state) {
   }
 }
 
-// Variable globale pour la socket
-let ws;
+// ── URL DYNAMIQUE (local vs en ligne) ──
+const _proto   = location.protocol === 'https:' ? 'https' : 'http';
+const _wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+const API      = `${_proto}://${location.host}`;
+const WS_URL   = `${_wsProto}://${location.host}`;
 
-function connectWS() {
-  // 1. Détection automatique du protocole et de l'hôte
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = protocol + '//' + window.location.host;
-
-  // 2. Initialisation
-  ws = new WebSocket(wsUrl);
-
-  // 3. Gestion des messages (c'est ici que ton overlay "écoute" le serveur)
-  ws.onmessage = e => {
-    const data = JSON.parse(e.data);
-    
-    // Gestion de l'allumage/extinction (Power)
-    if ('power' in data && Object.keys(data).length === 1) {
-      if (data.power === true  && typeof powerOn === 'function') { powerOn(); return; }
-      if (data.power === false && typeof powerOff === 'function') { powerOff(); return; }
-      return;
-    }
-    
-    // Mise à jour de l'état du train
-    if (typeof applyState === 'function') {
-      applyState(data);
-    }
-  };
-
-  // 4. Gestion de la reconnexion automatique (indispensable sur Render)
-  ws.onclose = () => {
-    console.warn("Connexion perdue, tentative de reconnexion dans 3s...");
-    setTimeout(connectWS, 3000); 
-  };
-  
-  ws.onerror = () => console.warn('Erreur WebSocket');
-}
-
-// Lancement au démarrage de la page
-connectWS();
+const ws = new WebSocket(WS_URL);
+ws.onmessage = e => {
+  const data = JSON.parse(e.data);
+  if ('power' in data && Object.keys(data).length === 1) {
+    if (data.power === true  && !_isPowered) { powerOn();  return; }
+    if (data.power === false &&  _isPowered) { powerOff(); return; }
+    return; // déjà dans le bon état, on ignore
+  }
+  applyState(data);
+};
+ws.onerror   = () => console.warn('WS non connecté');
 
 // Le state est chargé uniquement si l'overlay est allumé (géré via WS + powerOn)
 

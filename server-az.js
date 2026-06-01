@@ -242,11 +242,12 @@ const server = http.createServer(async (req,res) => {
 
   // ── ROUTAGE DISTRIBUTION DES PAGES (Restauré à l'identique de ton code d'origine) ──
   let fp;
-  if (pathname === '/' || pathname === '/train') fp = path.join(__dirname, 'dashboard.html');
-  else if (pathname === '/train-overlay')        fp = path.join(__dirname, 'overlay.html');
-  else if (pathname === '/dashboard')            fp = path.join(__dirname, 'nowplaying-dashboard.html');
-  else if (pathname === '/overlay')              fp = path.join(__dirname, 'nowplaying-overlay.html');
-  else                                           fp = path.join(__dirname, pathname);
+  if (pathname === '/')                               fp = path.join(__dirname, 'index.html'); 
+  else if (pathname === '/train')                     fp = path.join(__dirname, 'dashboard.html');
+  else if (pathname === '/train-overlay')             fp = path.join(__dirname, 'overlay.html');
+  else if (pathname === '/dashboard')                 fp = path.join(__dirname, 'nowplaying-dashboard.html');
+  else if (pathname === '/overlay')                   fp = path.join(__dirname, 'nowplaying-overlay.html');
+  else                                                fp = path.join(__dirname, pathname);                                         fp = path.join(__dirname, pathname);
 
   const ext = path.extname(fp);
   if (!ext && fs.existsSync(fp + '.html')) fp += '.html';

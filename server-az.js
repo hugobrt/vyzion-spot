@@ -8,7 +8,7 @@ const { WebSocketServer } = require('ws');
 
 // Configuration du Port unique (Render compatible)
 const PORT         = process.env.PORT || 3001;
-const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;
+const REDIRECT_URI = `http://localhost:${PORT}/callback`;
 const SCOPES       = 'user-read-currently-playing user-read-playback-state';
 
 // Fichiers de configuration et de persistance
@@ -70,7 +70,7 @@ const MIME = {
   '.svg':'image/svg+xml'
 };
 
-// ── FONCTIONS LOGIQUES DE L'API SPOTIFY ──
+// ── FONCTIONS LOGIQUES DE L'API SPOTIFY (CORRIGÉES) ──
 function httpsPost(hostname, pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
@@ -156,10 +156,10 @@ const server = http.createServer(async (req,res) => {
   const parsed   = new urlMod.URL(req.url,`http://localhost:${PORT}`);
   const pathname = parsed.pathname;
 
-  // ── [ROUTES API : SPOTIFY] ──
+  // ── [ROUTES API : SPOTIFY CORRIGÉES] ──
   if (pathname==='/auth') {
     const p = new urlMod.URLSearchParams({ response_type:'code', client_id:cfg.clientId, scope:SCOPES, redirect_uri:REDIRECT_URI, show_dialog:'true' });
-    res.writeHead(302,{Location:`https://accounts.spotify.com/authorize?$?${p}`}); return res.end();
+    res.writeHead(302,{Location:`https://accounts.spotify.com/authorize?${p}`}); return res.end();
   }
 
   if (pathname==='/callback') {
@@ -293,9 +293,9 @@ const server = http.createServer(async (req,res) => {
   }
 
   // ── [DISTRIBUTION DES FICHIERS STATIQUES] ──
-let fp;
+  let fp;
   if (pathname === '/') {
-    fp = path.join(__dirname, 'index.html'); // La racine envoie maintenant sur le Hub !
+    fp = path.join(__dirname, 'index.html');
   } else if (pathname === '/dashboard') {
     fp = path.join(__dirname, 'nowplaying-dashboard.html');
   } else if (pathname === '/overlay') {
@@ -324,15 +324,12 @@ function broadcast(data) {
 }
 
 wss.on('connection', ws => {
-  // Envoie les infos d'initialisation Spotify à la connexion
   ws.send(JSON.stringify({ type:'init', track:currentTrack, connected:isConnected }));
-  
-  // Envoie les infos d'initialisation Train / Bus à la connexion
   ws.send(JSON.stringify({ power: powered }));
   if (powered) ws.send(JSON.stringify(state));
 });
 
-// ── SÉCURITÉ RENDERS : PING DE MAINTIEN EN VIE AUTOMATIQUE (Anti-Timeout 5min) ──
+// PING DE MAINTIEN EN VIE AUTOMATIQUE (Anti-Timeout Render)
 setInterval(() => {
   wss.clients.forEach((client) => {
     if (client.readyState === 1) {
@@ -341,16 +338,11 @@ setInterval(() => {
   });
 }, 30000);
 
-
-// ── DÉMARRAGE DU SERVEUR UNIQUE ──
+// DÉMARRAGE
 server.listen(PORT, ()=>{
-  console.log(`\n🚀 SERVEUR CENTRALISÉ EN LIGNE (Port ${PORT})`);
+  console.log(`\n🚀 SERVEUR CENTRALISÉ RECORRIGÉ (Port ${PORT})`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(` 🎵 SPOTIFY :`);
-  console.log(`   -> Dashboard : http://localhost:${PORT}/dashboard`);
-  console.log(`   -> Overlay   : http://localhost:${PORT}/overlay`);
-  console.log(` 🚂 TRAIN / BUS :`);
-  console.log(`   -> Dashboard : http://localhost:${PORT}/train`);
-  console.log(`   -> Overlay   : http://localhost:${PORT}/train-overlay`);
+  console.log(` 🎵 SPOTIFY : http://localhost:${PORT}/dashboard`);
+  console.log(` 🚂 TRAIN / BUS : http://localhost:${PORT}/train`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });

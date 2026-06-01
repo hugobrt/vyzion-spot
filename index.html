@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             background: #0d0d14;
             color: #fff;
@@ -18,44 +18,44 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
-            overflow-hidden;
+            overflow: hidden;
             position: relative;
         }
 
-        /* Arrière-plan stylé avec des lueurs diffuses */
-        body::before {
-            content: '';
+        /* Lueurs animées en arrière-plan */
+        .glow {
             position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(29, 185, 84, 0.15); /* Vert Spotify */
-            filter: blur(120px);
-            top: 20%;
-            left: 25%;
             border-radius: 50%;
+            filter: blur(120px);
             z-index: 0;
+            animation: glowDrift 8s ease-in-out infinite alternate;
         }
-        body::after {
-            content: '';
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(0, 102, 204, 0.15); /* Bleu SNCF / Train */
-            filter: blur(120px);
-            bottom: 20%;
-            right: 25%;
-            border-radius: 50%;
-            z-index: 0;
+        .glow-green {
+            width: 350px; height: 350px;
+            background: rgba(29, 185, 84, 0.18);
+            top: 15%; left: 20%;
+            animation-delay: 0s;
+        }
+        .glow-blue {
+            width: 320px; height: 320px;
+            background: rgba(0, 102, 204, 0.18);
+            bottom: 15%; right: 20%;
+            animation-delay: -4s;
+        }
+        @keyframes glowDrift {
+            from { transform: translate(0, 0) scale(1); }
+            to   { transform: translate(30px, -20px) scale(1.1); }
         }
 
         .container {
             position: relative;
             z-index: 1;
-            max-width: 800px;
+            max-width: 820px;
             width: 100%;
             text-align: center;
         }
 
+        /* Header animé */
         h1 {
             font-size: 32px;
             font-weight: 800;
@@ -64,12 +64,17 @@
             background: linear-gradient(135deg, #ffffff 0%, #a5a5b5 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            animation: fadeDown 0.7s cubic-bezier(0.34,1.4,0.64,1) both;
         }
-
         .subtitle {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255,255,255,0.4);
             margin-bottom: 48px;
+            animation: fadeDown 0.7s cubic-bezier(0.34,1.4,0.64,1) 0.1s both;
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         .grid {
@@ -78,14 +83,15 @@
             gap: 24px;
             width: 100%;
         }
-
         @media (max-width: 600px) {
             .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 24px; }
         }
 
+        /* ── CARTE STANDARD ── */
         .card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 20px;
             padding: 32px 24px;
             text-decoration: none;
@@ -94,35 +100,58 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             position: relative;
             overflow: hidden;
+            animation: cardIn 0.6s cubic-bezier(0.34,1.4,0.64,1) both;
+        }
+        .card:nth-child(1) { animation-delay: 0.15s; }
+        .card:nth-child(2) { animation-delay: 0.25s; }
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
+        /* Effet lumière souris */
         .card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(800px circle at var(--x, 0px) var(--y, 0px), rgba(255,255,255,0.06), transparent 40%);
+            background: radial-gradient(600px circle at var(--x,50%) var(--y,50%), rgba(255,255,255,0.07), transparent 40%);
             opacity: 0;
-            transition: opacity 0.5s;
+            transition: opacity 0.4s;
+            pointer-events: none;
         }
-
         .card:hover::before { opacity: 1; }
 
-        /* Styles spécifiques au survol de chaque carte */
-        .card.spotify:hover {
-            border-color: rgba(29, 185, 84, 0.4);
-            box-shadow: 0 12px 40px rgba(29, 185, 84, 0.1);
-            transform: translateY(-4px);
+        /* Sheen animé */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(105deg, transparent, rgba(255,255,255,0.04), transparent);
+            transform: skewX(-20deg);
+            pointer-events: none;
+        }
+        .card:hover::after {
+            animation: sheen 0.6s ease forwards;
+        }
+        @keyframes sheen {
+            from { left: -100%; }
+            to   { left: 150%; }
         }
 
+        .card.spotify:hover {
+            border-color: rgba(29,185,84,0.45);
+            box-shadow: 0 16px 48px rgba(29,185,84,0.12);
+            transform: translateY(-5px);
+        }
         .card.train:hover {
-            border-color: rgba(0, 132, 255, 0.4);
-            box-shadow: 0 12px 40px rgba(0, 132, 255, 0.1);
-            transform: translateY(-4px);
+            border-color: rgba(0,132,255,0.45);
+            box-shadow: 0 16px 48px rgba(0,132,255,0.12);
+            transform: translateY(-5px);
         }
 
         .icon {
@@ -130,55 +159,980 @@
             margin-bottom: 16px;
             transition: transform 0.3s ease;
         }
-        .card:hover .icon { transform: scale(1.1); }
+        .card:hover .icon { transform: scale(1.12) rotate(-4deg); }
 
         .card-title {
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 8px;
         }
-
         .card.spotify .card-title { color: #1db954; }
-        .card.train .card-title { color: #3897ff; }
+        .card.train   .card-title { color: #3897ff; }
 
         .card-desc {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.45);
+            color: rgba(255,255,255,0.45);
             line-height: 1.5;
         }
+
+        /* ══════════════════════════════════════
+           CARTE DOSSIER TRAIN (split au hover)
+           ══════════════════════════════════════ */
+        .card-folder {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            min-height: 90px;
+            animation: cardIn 0.6s cubic-bezier(0.34,1.4,0.64,1) 0.25s both;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-folder:hover {
+            border-color: rgba(0,132,255,0.45);
+            box-shadow: 0 16px 48px rgba(0,132,255,0.12);
+        }
+
+        /* Onglet dossier en haut */
+        .folder-tab {
+            position: absolute;
+            top: -1px; left: 20px;
+            width: 60px; height: 10px;
+            background: rgba(56,151,255,0.25);
+            border-radius: 6px 6px 0 0;
+            border: 1px solid rgba(0,132,255,0.3);
+            border-bottom: none;
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+        .card-folder:hover .folder-tab {
+            width: 90px;
+            background: rgba(56,151,255,0.4);
+        }
+
+        /* Contenu par défaut (centré, visible au repos) */
+        .folder-default {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 90px;
+            padding: 32px 24px;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .card-folder:hover .folder-default {
+            opacity: 0;
+            transform: scale(0.92);
+            pointer-events: none;
+        }
+        /* Sur mobile (touch) : on garde le défaut visible, split géré par .open */
+        @media (hover: none) {
+            .card-folder:hover .folder-default { opacity: 1; transform: scale(1); }
+            .card-folder.open  .folder-default { opacity: 0; transform: scale(0.92); pointer-events: none; }
+        }
+
+        /* Conteneur split */
+        .folder-split {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease 0.1s;
+        }
+        .card-folder:hover .folder-split {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @media (hover: none) {
+            .card-folder:hover .folder-split { opacity: 0; pointer-events: none; }
+            .card-folder.open  .folder-split { opacity: 1; pointer-events: auto; }
+        }
+
+        /* Chaque moitié */
+        .folder-half {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #fff;
+            transition: background 0.2s ease, transform 0.2s ease;
+            position: relative;
+            padding: 20px 12px;
+        }
+        .folder-half:first-child {
+            border-right: 1px solid rgba(255,255,255,0.07);
+        }
+        .folder-half:hover {
+            background: rgba(56,151,255,0.1);
+            transform: scale(1.03);
+        }
+        .folder-half:active {
+            background: rgba(56,151,255,0.2);
+            transform: scale(0.97);
+        }
+
+        /* Animation d'entrée des demis */
+        .card-folder:hover .folder-half:nth-child(1) {
+            animation: slideFromLeft 0.3s cubic-bezier(0.34,1.4,0.64,1) both;
+        }
+        .card-folder:hover .folder-half:nth-child(2) {
+            animation: slideFromRight 0.3s cubic-bezier(0.34,1.4,0.64,1) both;
+        }
+        @media (hover: none) {
+            .card-folder.open .folder-half:nth-child(1) {
+                animation: slideFromLeft 0.3s cubic-bezier(0.34,1.4,0.64,1) both;
+            }
+            .card-folder.open .folder-half:nth-child(2) {
+                animation: slideFromRight 0.3s cubic-bezier(0.34,1.4,0.64,1) both;
+            }
+        }
+        @keyframes slideFromLeft  { from { transform: translateX(-16px) opacity(0); } to { transform: translateX(0); } }
+        @keyframes slideFromRight { from { transform: translateX(16px)  opacity(0); } to { transform: translateX(0); } }
+
+        .half-icon { font-size: 28px; }
+        .half-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.8);
+        }
+        .half-sub {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            text-align: center;
+        }
+        /* Diviseur vertical animé */
+        .folder-half:first-child::after {
+            content: '';
+            position: absolute;
+            right: 0; top: 20%; height: 60%;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, rgba(56,151,255,0.4), transparent);
+        }
+
+        /* ── SPLASH ── */
+        #splash {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #0d0d14;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: splashFadeOut 0.7s ease 2.8s forwards;
+        }
+        @keyframes splashFadeOut {
+            to { opacity: 0; pointer-events: none; }
+        }
+
+        #splash-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+
+        #splash-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sp-powered {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+            animation: spFadeUp 0.6s cubic-bezier(0.34,1.4,0.64,1) 0.3s both;
+        }
+
+        .sp-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sp-vyzion {
+            font-size: 52px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #fff 0%, #3897ff 50%, #1db954 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: spFadeUp 0.7s cubic-bezier(0.34,1.4,0.64,1) 0.5s both,
+                       gradientShift 2s ease 0.5s forwards;
+        }
+        @keyframes gradientShift {
+            0%   { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .sp-line {
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(56,151,255,0.6), rgba(29,185,84,0.6), transparent);
+            animation: spLineGrow 0.5s ease 1.1s forwards;
+        }
+        @keyframes spLineGrow {
+            to { width: 220px; }
+        }
+
+        .sp-drt {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.35);
+            text-transform: uppercase;
+            animation: spFadeUp 0.5s cubic-bezier(0.34,1.4,0.64,1) 1.3s both;
+        }
+
+        @keyframes spFadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Barre de chargement */
+        #splash-bar-wrap {
+            width: 180px;
+            height: 2px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 999px;
+            overflow: hidden;
+            animation: spFadeUp 0.4s ease 1.5s both;
+        }
+        #splash-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #3897ff, #1db954);
+            animation: spBarFill 1s cubic-bezier(0.4,0,0.2,1) 1.6s forwards;
+        }
+        @keyframes spBarFill {
+            to { width: 100%; }
+        }
+
+        /* ── Signature bas gauche ── */
+        .hub-signature {
+            position: fixed;
+            bottom: 28px;
+            left: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            z-index: 1;
+            animation: fadeDown 0.7s cubic-bezier(0.34,1.4,0.64,1) 0.4s both;
+        }
+        .sig-powered {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.22);
+        }
+        .sig-vyzion {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #3897ff 0%, #1db954 60%, #a78bfa 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: sigGradient 4s ease-in-out infinite alternate;
+        }
+        @keyframes sigGradient {
+            0%   { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        @media (max-width: 600px) {
+            .hub-signature { bottom: 20px; left: 20px; }
+            .sig-vyzion { font-size: 18px; }
+        }
+
+        /* ── CARTE UTILITAIRES (folder pleine largeur) ── */
+        .util-folder {
+            margin-top: 16px;
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            backdrop-filter: blur(16px);
+            min-height: 90px;
+            animation: cardIn 0.6s cubic-bezier(0.34,1.4,0.64,1) 0.35s both;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .util-folder:hover {
+            border-color: rgba(255,179,0,0.35);
+            box-shadow: 0 8px 32px rgba(255,179,0,0.08);
+        }
+
+        /* Vue repos */
+        .util-default {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 28px 24px;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .util-default-icon { font-size: 20px; }
+        .util-default-label {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: rgba(255,179,0,0.85);
+        }
+        .util-default-sub {
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+        }
+        .util-folder:hover .util-default {
+            opacity: 0; transform: scale(0.94); pointer-events: none;
+        }
+        @media (hover: none) {
+            .util-folder:hover .util-default { opacity: 1; transform: none; pointer-events: auto; }
+            .util-folder.open  .util-default { opacity: 0; transform: scale(0.94); pointer-events: none; }
+        }
+
+        /* Vue split — flex 4 en ligne */
+        .util-split {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: stretch;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease 0.08s;
+        }
+        .util-folder:hover .util-split { opacity: 1; pointer-events: auto; }
+        @media (hover: none) {
+            .util-folder:hover .util-split { opacity: 0; pointer-events: none; }
+            .util-folder.open  .util-split { opacity: 1; pointer-events: auto; }
+        }
+
+        /* Chaque quart */
+        .util-half {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 20px 16px;
+            text-decoration: none;
+            color: #fff;
+            transition: background 0.2s ease;
+            position: relative;
+        }
+        /* Bordures internes */
+        .util-half { border-right: 1px solid rgba(255,255,255,0.06); }
+        .util-half:last-child { border-right: none; }
+
+        .util-half:hover { background: rgba(255,255,255,0.04); }
+        .util-half-icon { font-size: 18px; line-height: 1; }
+        .util-half-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.75);
+        }
+        .util-half-sub { font-size: 10px; color: rgba(255,255,255,0.3); text-align: center; }
+
+        /* Animations entrée quarts */
+        .util-folder:hover .util-half:nth-child(1) { animation: slideFromLeft  0.28s cubic-bezier(0.34,1.4,0.64,1) both; }
+        .util-folder:hover .util-half:nth-child(2) { animation: slideFromRight 0.28s cubic-bezier(0.34,1.4,0.64,1) 0.03s both; }
+        .util-folder:hover .util-half:nth-child(3) { animation: slideFromLeft  0.28s cubic-bezier(0.34,1.4,0.64,1) 0.06s both; }
+        .util-folder:hover .util-half:nth-child(4) { animation: slideFromRight 0.28s cubic-bezier(0.34,1.4,0.64,1) 0.09s both; }
+        @media (hover:none) {
+            .util-folder.open .util-half:nth-child(1) { animation: slideFromLeft  0.28s cubic-bezier(0.34,1.4,0.64,1) both; }
+            .util-folder.open .util-half:nth-child(2) { animation: slideFromRight 0.28s cubic-bezier(0.34,1.4,0.64,1) 0.03s both; }
+            .util-folder.open .util-half:nth-child(3) { animation: slideFromLeft  0.28s cubic-bezier(0.34,1.4,0.64,1) 0.06s both; }
+            .util-folder.open .util-half:nth-child(4) { animation: slideFromRight 0.28s cubic-bezier(0.34,1.4,0.64,1) 0.09s both; }
+        }
+
+        /* Hover coloré par bloc */
+        .util-status:hover { background: rgba(56,151,255,0.07); }
+        .util-clock         { cursor: default; }
+        .util-sd:hover      { background: rgba(255,179,0,0.07); }
+        .util-render:hover  { background: rgba(0,200,83,0.07); }
+
+        /* Statut dots */
+        .status-rows { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+        .status-row  { display: flex; align-items: center; gap: 6px; }
+        .status-dot  {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            flex-shrink: 0;
+            transition: background 0.4s ease, box-shadow 0.4s ease;
+        }
+        .status-dot.green {
+            background: #00c853;
+            box-shadow: 0 0 6px rgba(0,200,83,0.7);
+            animation: dotPulseG 1.6s ease-in-out infinite;
+        }
+        .status-dot.red {
+            background: #ff3c3c;
+            box-shadow: 0 0 6px rgba(255,60,60,0.6);
+        }
+        .status-dot.orange {
+            background: #ffb300;
+            box-shadow: 0 0 6px rgba(255,179,0,0.6);
+        }
+        @keyframes dotPulseG {
+            0%,100% { box-shadow: 0 0 4px rgba(0,200,83,0.5); }
+            50%      { box-shadow: 0 0 10px rgba(0,200,83,0.9); }
+        }
+        .status-text { font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; }
+
+        /* Horloge */
+        .clock-time {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .clock-date { font-size: 10px; color: rgba(255,255,255,0.3); }
+
+        /* ── OVERLAY MODAL ── */
+        #sd-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #sd-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #sd-modal {
+            background: rgba(13,13,20,0.97);
+            border: 1px solid rgba(255,179,0,0.25);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,179,0,0.1);
+            transform: translateY(24px) scale(0.97);
+            transition: transform 0.35s cubic-bezier(0.34,1.4,0.64,1);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,179,0,0.2) transparent;
+        }
+        #sd-overlay.show #sd-modal {
+            transform: translateY(0) scale(1);
+        }
+
+        /* Header modal */
+        .sd-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .sd-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 800;
+            color: rgba(255,179,0,0.95);
+        }
+        .sd-modal-title span { font-size: 22px; }
+        .sd-close {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.5);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .sd-close:hover { background: rgba(255,60,60,0.15); border-color: rgba(255,60,60,0.4); color: #ff5555; }
+
+        /* URL de base */
+        .sd-base-wrap {
+            background: rgba(255,179,0,0.06);
+            border: 1px solid rgba(255,179,0,0.2);
+            border-radius: 12px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sd-base-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,179,0,0.6);
+            white-space: nowrap;
+        }
+        .sd-base-url {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+            flex: 1;
+            word-break: break-all;
+        }
+
+        /* Sections */
+        .sd-section {
+            margin-bottom: 20px;
+        }
+        .sd-section-title {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sd-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.07);
+        }
+
+        /* Lignes endpoint */
+        .sd-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .sd-row:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); }
+
+        .sd-method {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            padding: 3px 7px;
+            border-radius: 5px;
+            flex-shrink: 0;
+        }
+        .sd-method.get  { background: rgba(0,200,83,0.15);  color: #00c853; border: 1px solid rgba(0,200,83,0.3); }
+        .sd-method.post { background: rgba(56,151,255,0.15); color: #3897ff; border: 1px solid rgba(56,151,255,0.3); }
+
+        .sd-endpoint {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            flex: 1;
+            word-break: break-all;
+        }
+        .sd-endpoint .base { color: rgba(255,255,255,0.3); }
+        .sd-endpoint .path { color: rgba(255,255,255,0.85); }
+
+        .sd-desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            white-space: nowrap;
+        }
+
+        .sd-copy {
+            width: 28px; height: 28px;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .sd-copy:hover { background: rgba(255,179,0,0.15); border-color: rgba(255,179,0,0.4); color: #ffb300; }
+        .sd-copy.copied { background: rgba(0,200,83,0.15); border-color: rgba(0,200,83,0.4); color: #00c853; }
+
+        /* Note bas de modal */
+        .sd-note {
+            margin-top: 20px;
+            padding: 12px 16px;
+            background: rgba(56,151,255,0.06);
+            border: 1px solid rgba(56,151,255,0.15);
+            border-radius: 10px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.6;
+        }
+        .sd-note strong { color: rgba(56,151,255,0.8); }
     </style>
 </head>
 <body>
+
+    <!-- ── SPLASH SCREEN ── -->
+    <div id="splash">
+        <div id="splash-inner">
+            <div id="splash-logo">
+                <span class="sp-powered">POWERED BY</span>
+                <div class="sp-brand">
+                    <span class="sp-vyzion">Vyzion</span>
+                    <div class="sp-line"></div>
+                    <span class="sp-drt">by drt-hbr</span>
+                </div>
+            </div>
+            <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
+        </div>
+    </div>
+
+
+    <div class="glow glow-green"></div>
+    <div class="glow glow-blue"></div>
 
     <div class="container">
         <h1>STATION DE CONTRÔLE</h1>
         <p class="subtitle">Centralisation des outils et des overlays de stream</p>
 
         <div class="grid">
+
+            <!-- Carte Spotify (inchangée) -->
             <a href="/dashboard" class="card spotify">
                 <div class="icon">🎵</div>
                 <div class="card-title">Gestion Spotify</div>
                 <div class="card-desc">Authentification, configuration de l'API et suivi de la musique en cours pour l'overlay.</div>
             </a>
 
-            <a href="/train" class="card train">
-                <div class="icon">🚂</div>
-                <div class="card-title">Régie Train & Bus</div>
-                <div class="card-desc">Contrôle de l'overlay des gares, gestion des arrêts, des annonces voyageurs et des presets.</div>
-            </a>
+            <!-- Carte Train : dossier avec split -->
+            <div class="card-folder train" id="trainFolder">
+                <div class="folder-tab"></div>
+
+                <!-- Vue par défaut (repos) -->
+                <div class="folder-default">
+                    <div class="icon" style="font-size:40px;margin-bottom:16px;transition:transform 0.3s">🚂</div>
+                    <div class="card-title" style="font-size:18px;font-weight:700;color:#3897ff;margin-bottom:8px;">Régie Train & Bus</div>
+                    <div class="card-desc" style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Contrôle de l'overlay des gares, gestion des arrêts, des annonces voyageurs et des presets.</div>
+                </div>
+
+                <!-- Vue split (hover PC / tap mobile) -->
+                <div class="folder-split">
+                    <a href="/train" class="folder-half">
+                        <div class="half-icon">🎛️</div>
+                        <div class="half-label">Dashboard</div>
+                        <div class="half-sub">Gestion des arrêts & presets</div>
+                    </a>
+                    <a href="/train-overlay" class="folder-half">
+                        <div class="half-icon">📺</div>
+                        <div class="half-label">Overlay</div>
+                        <div class="half-sub">Aperçu de l'affichage stream</div>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Carte Utilitaires / Config (folder pleine largeur) -->
+        <div class="util-folder" id="utilFolder">
+            <div class="folder-tab" style="background:rgba(255,179,0,0.2);border-color:rgba(255,179,0,0.25);"></div>
+
+            <!-- Vue repos -->
+            <div class="util-default">
+                <span class="util-default-icon">⚙️</span>
+                <span class="util-default-label">Utilitaires &amp; Config</span>
+                <span class="util-default-sub">Survol ou tap pour ouvrir</span>
+            </div>
+
+            <!-- Vue split (4 blocs) -->
+            <div class="util-split" id="utilSplit">
+
+                <!-- Bloc 1 : Statut serveur + LIVE overlay -->
+                <div class="util-half util-status">
+                    <div class="util-half-icon">📡</div>
+                    <div class="util-half-label">Statut</div>
+                    <div class="status-rows">
+                        <div class="status-row">
+                            <span class="status-dot" id="dot-server"></span>
+                            <span class="status-text" id="txt-server">Serveur…</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-dot" id="dot-overlay"></span>
+                            <span class="status-text" id="txt-overlay">Overlay…</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloc 2 : Heure -->
+                <div class="util-half util-clock">
+                    <div class="util-half-icon">🕐</div>
+                    <div class="util-half-label">Heure locale</div>
+                    <div class="clock-time" id="clock-time">--:--:--</div>
+                    <div class="clock-date" id="clock-date">---</div>
+                </div>
+
+                <!-- Bloc 3 : Stream Deck -->
+                <div class="util-half util-sd" onclick="openSD()" style="cursor:pointer;">
+                    <div class="util-half-icon">🎛️</div>
+                    <div class="util-half-label">Stream Deck</div>
+                    <div class="util-half-sub">Config &amp; URLs</div>
+                </div>
+
+                <!-- Bloc 4 : Render -->
+                <a href="https://dashboard.render.com" target="_blank" class="util-half util-render">
+                    <div class="util-half-icon">☁️</div>
+                    <div class="util-half-label">Render</div>
+                    <div class="util-half-sub">Dashboard serveur</div>
+                </a>
+
+            </div>
+        </div>
+
+        <!-- Modal Stream Deck -->
+        <div id="sd-overlay" onclick="if(event.target===this)closeSD()">
+            <div id="sd-modal">
+                <div class="sd-modal-header">
+                    <div class="sd-modal-title"><span>🎛️</span> Stream Deck Config</div>
+                    <button class="sd-close" onclick="closeSD()">✕</button>
+                </div>
+
+                <!-- URL de base -->
+                <div class="sd-base-wrap">
+                    <div class="sd-base-label">Base URL</div>
+                    <div class="sd-base-url" id="sd-base-url">chargement...</div>
+                </div>
+
+                <!-- Section Train -->
+                <div class="sd-section">
+                    <div class="sd-section-title">🚂 Overlay Train</div>
+
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b1"></span><span class="path">/api/next</span></span>
+                        <span class="sd-desc">Arrêt suivant</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'next')" title="Copier">⎘</button>
+                    </div>
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b2"></span><span class="path">/api/prev</span></span>
+                        <span class="sd-desc">Arrêt précédent</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'prev')" title="Copier">⎘</button>
+                    </div>
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b3"></span><span class="path">/api/depart</span></span>
+                        <span class="sd-desc">Lancer le départ</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'depart')" title="Copier">⎘</button>
+                    </div>
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b4"></span><span class="path">/api/pax</span></span>
+                        <span class="sd-desc">Toggle PAX</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'pax')" title="Copier">⎘</button>
+                    </div>
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b5"></span><span class="path">/api/fin</span></span>
+                        <span class="sd-desc">Fin de service</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'fin')" title="Copier">⎘</button>
+                    </div>
+                </div>
+
+                <!-- Section Power -->
+                <div class="sd-section">
+                    <div class="sd-section-title">⚡ Power Overlay</div>
+                    <div class="sd-row">
+                        <span class="sd-method post">POST</span>
+                        <span class="sd-endpoint"><span class="base" id="b6"></span><span class="path">/api/power</span> <span style="color:rgba(255,255,255,0.25);font-size:11px;">body: {"power":true}</span></span>
+                        <span class="sd-desc">Allumer</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'power-on')" title="Copier">⎘</button>
+                    </div>
+                    <div class="sd-row">
+                        <span class="sd-method post">POST</span>
+                        <span class="sd-endpoint"><span class="base" id="b7"></span><span class="path">/api/power</span> <span style="color:rgba(255,255,255,0.25);font-size:11px;">body: {"power":false}</span></span>
+                        <span class="sd-desc">Éteindre</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'power-off')" title="Copier">⎘</button>
+                    </div>
+                </div>
+
+                <!-- Section Pages -->
+                <div class="sd-section">
+                    <div class="sd-section-title">🌐 Pages</div>
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b8"></span><span class="path">/train</span></span>
+                        <span class="sd-desc">Dashboard train</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'train')" title="Copier">⎘</button>
+                    </div>
+                    <div class="sd-row">
+                        <span class="sd-method get">GET</span>
+                        <span class="sd-endpoint"><span class="base" id="b9"></span><span class="path">/train-overlay</span></span>
+                        <span class="sd-desc">Overlay OBS</span>
+                        <button class="sd-copy" onclick="copyUrl(this, 'train-overlay')" title="Copier">⎘</button>
+                    </div>
+                </div>
+
+                <div class="sd-note">
+                    💡 Dans <strong>Stream Deck</strong>, utilise l'action <strong>Website</strong> (ouvrir une URL) pour les GET.<br>
+                    Pour les POST (power), utilise un plugin HTTP comme <strong>Stream Deck Toolbox</strong> ou <strong>BarRaider Advanced Launcher</strong>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature bas gauche -->
+        <div class="hub-signature">
+            <span class="sig-powered">POWERED BY</span>
+            <span class="sig-vyzion">VYZION</span>
         </div>
     </div>
 
     <script>
-        // Effet de lumière interactif au mouvement de la souris sur les cartes
+
+
+        // ── Base URL ──
+        const BASE = 'https://vyz.drt-hbr.sbs';
+
+        // ── Stream Deck modal ──
+        function openSD() {
+            document.getElementById('sd-base-url').textContent = BASE;
+            ['b1','b2','b3','b4','b5','b6','b7','b8','b9'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = BASE;
+            });
+            document.getElementById('sd-overlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSD() {
+            document.getElementById('sd-overlay').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSD(); });
+
+        const SD_PATHS = {
+            'next':          '/api/next',
+            'prev':          '/api/prev',
+            'depart':        '/api/depart',
+            'pax':           '/api/pax',
+            'fin':           '/api/fin',
+            'power-on':      '/api/power',
+            'power-off':     '/api/power',
+            'train':         '/train',
+            'train-overlay': '/train-overlay',
+        };
+        function copyUrl(btn, key) {
+            const path = SD_PATHS[key] || '';
+            navigator.clipboard.writeText(BASE + path).then(() => {
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = '⎘'; btn.classList.remove('copied'); }, 1500);
+            });
+        }
+
+        // ── Carte Utilitaires : toggle mobile ──
+        const utilFolder = document.getElementById('utilFolder');
+        utilFolder.addEventListener('click', e => {
+            if (e.target.closest('.util-sd'))     return; // openSD gère ça
+            if (e.target.closest('.util-render'))  return; // lien externe
+            if (e.target.closest('.util-clock'))   return; // non cliquable
+            if (e.target.closest('.util-status'))  return; // non cliquable
+            if (window.matchMedia('(hover: none)').matches) {
+                utilFolder.classList.toggle('open');
+            }
+        });
+        document.addEventListener('click', e => {
+            if (!utilFolder.contains(e.target)) utilFolder.classList.remove('open');
+        });
+
+        // ── Horloge temps réel ──
+        function updateClock() {
+            const now  = new Date();
+            const hms  = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const date = now.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
+            const ct = document.getElementById('clock-time');
+            const cd = document.getElementById('clock-date');
+            if (ct) ct.textContent = hms;
+            if (cd) cd.textContent = date;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // ── Ping statut serveur + overlay ──
+        async function pingStatus() {
+            const dotS  = document.getElementById('dot-server');
+            const txtS  = document.getElementById('txt-server');
+            const dotO  = document.getElementById('dot-overlay');
+            const txtO  = document.getElementById('txt-overlay');
+            try {
+                const res  = await fetch(BASE + '/api/state', { method: 'GET', signal: AbortSignal.timeout(4000) });
+                const data = await res.json();
+                // Serveur UP
+                if (dotS) { dotS.className = 'status-dot green'; }
+                if (txtS) txtS.textContent = 'Serveur en ligne';
+                // Overlay power
+                const powered = data.power !== false;
+                if (dotO) dotO.className = 'status-dot ' + (powered ? 'green' : 'red');
+                if (txtO) txtO.textContent = powered ? 'Overlay actif' : 'Overlay éteint';
+            } catch {
+                if (dotS) { dotS.className = 'status-dot red'; }
+                if (txtS) txtS.textContent = 'Serveur hors ligne';
+                if (dotO) { dotO.className = 'status-dot orange'; }
+                if (txtO) txtO.textContent = 'Inconnu';
+            }
+        }
+        pingStatus();
+        setInterval(pingStatus, 6000);
+
+        // Supprimer le splash du DOM après l'animation
+        document.getElementById('splash').addEventListener('animationend', function(e) {
+            if (e.animationName === 'splashFadeOut') this.remove();
+        });
+
+        // Effet lumière souris sur les cartes simples
         document.querySelectorAll('.card').forEach(card => {
             card.addEventListener('mousemove', e => {
                 const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                card.style.setProperty('--x', `${x}px`);
-                card.style.setProperty('--y', `${y}px`);
+                card.style.setProperty('--x', `${e.clientX - rect.left}px`);
+                card.style.setProperty('--y', `${e.clientY - rect.top}px`);
             });
+        });
+
+        // Mobile : tap sur la carte dossier pour ouvrir/fermer le split
+        const folder = document.getElementById('trainFolder');
+        folder.addEventListener('click', e => {
+            // Si on a cliqué sur un lien dans le split, laisser naviguer
+            if (e.target.closest('.folder-half')) return;
+            // Sinon toggle le split
+            folder.classList.toggle('open');
+        });
+
+        // Fermer le split si on tape ailleurs
+        document.addEventListener('click', e => {
+            if (!folder.contains(e.target)) folder.classList.remove('open');
         });
     </script>
 </body>

@@ -189,3 +189,14 @@ server.listen(PORT, () => {
     }
     console.log(" ==========================================\n");
 });
+
+// Script de maintien en vie (Anti-timeout Render)
+setInterval(() => {
+    if (wss && wss.clients) {
+        wss.clients.forEach((client) => {
+            if (client.readyState === 1) { // 1 = WebSocket.OPEN
+                client.send(JSON.stringify({ type: 'ping' }));
+            }
+        });
+    }
+}, 30000); // Envoie un "ping" toutes les 30 secondes

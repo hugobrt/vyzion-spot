@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Hub de Contrôle Stream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #0d0d14;
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-hidden;
+            position: relative;
+        }
+
+        /* Arrière-plan stylé avec des lueurs diffuses */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(29, 185, 84, 0.15); /* Vert Spotify */
+            filter: blur(120px);
+            top: 20%;
+            left: 25%;
+            border-radius: 50%;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(0, 102, 204, 0.15); /* Bleu SNCF / Train */
+            filter: blur(120px);
+            bottom: 20%;
+            right: 25%;
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #a5a5b5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 48px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(800px circle at var(--x, 0px) var(--y, 0px), rgba(255,255,255,0.06), transparent 40%);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .card:hover::before { opacity: 1; }
+
+        /* Styles spécifiques au survol de chaque carte */
+        .card.spotify:hover {
+            border-color: rgba(29, 185, 84, 0.4);
+            box-shadow: 0 12px 40px rgba(29, 185, 84, 0.1);
+            transform: translateY(-4px);
+        }
+
+        .card.train:hover {
+            border-color: rgba(0, 132, 255, 0.4);
+            box-shadow: 0 12px 40px rgba(0, 132, 255, 0.1);
+            transform: translateY(-4px);
+        }
+
+        .icon {
+            font-size: 40px;
+            margin-bottom: 16px;
+            transition: transform 0.3s ease;
+        }
+        .card:hover .icon { transform: scale(1.1); }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .card.spotify .card-title { color: #1db954; }
+        .card.train .card-title { color: #3897ff; }
+
+        .card-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>STATION DE CONTRÔLE</h1>
+        <p class="subtitle">Centralisation des outils et des overlays de stream</p>
+
+        <div class="grid">
+            <a href="/dashboard" class="card spotify">
+                <div class="icon">🎵</div>
+                <div class="card-title">Gestion Spotify</div>
+                <div class="card-desc">Authentification, configuration de l'API et suivi de la musique en cours pour l'overlay.</div>
+            </a>
+
+            <a href="/train" class="card train">
+                <div class="icon">🚂</div>
+                <div class="card-title">Régie Train & Bus</div>
+                <div class="card-desc">Contrôle de l'overlay des gares, gestion des arrêts, des annonces voyageurs et des presets.</div>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Effet de lumière interactif au mouvement de la souris sur les cartes
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--x', `${x}px`);
+                card.style.setProperty('--y', `${y}px`);
+            });
+        });
+    </script>
+</body>
+</html>

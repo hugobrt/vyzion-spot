@@ -187,6 +187,43 @@
 
 
   </style>
+
+  <script>
+    // FAVICON dynamique
+    (function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32; canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      let hue = 0;
+
+      function drawFavicon() {
+        ctx.clearRect(0, 0, 32, 32);
+        // Fond arrondi
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 32, 32, 8);
+        ctx.fillStyle = '#0a0a0f';
+        ctx.fill();
+        // Gradient animé sur le V
+        const grad = ctx.createLinearGradient(0, 0, 32, 32);
+        grad.addColorStop(0, `hsl(${hue}, 80%, 70%)`);
+        grad.addColorStop(0.5, `hsl(${hue + 80}, 80%, 60%)`);
+        grad.addColorStop(1, `hsl(${hue + 160}, 70%, 65%)`);
+        ctx.fillStyle = grad;
+        ctx.font = 'bold 22px Space Grotesk, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V', 16, 17);
+        // Mise à jour du favicon
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+        link.href = canvas.toDataURL();
+        hue = (hue + 1) % 360;
+      }
+
+      drawFavicon();
+      setInterval(drawFavicon, 50);
+    })();
+  </script>
 </head>
 <body>
 
@@ -198,7 +235,7 @@
   <div class="state">Déconnecté &nbsp;·&nbsp; inactif</div>
 
   <div class="line"></div>
-  <a class="reconnect" href="index.html">↩ Reconnect</a>
+  <a class="reconnect" href="https://vyz.drt-hbr.sbs">↩ Reconnect</a>
 
   <div class="clock">
     <div id="greeting" style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.28);margin-bottom:6px;"></div>
@@ -279,7 +316,7 @@
         document.body.style.transition = 'background 1.2s ease';
         document.body.style.background = '#000';
         const leaf = document.getElementById('eco-leaf'); if(leaf) leaf.style.opacity = '1';
-      }, 5000); // eco-deep timer
+      }, 5000);
     }
 
     function deactivateEco() {

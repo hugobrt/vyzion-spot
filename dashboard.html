@@ -592,7 +592,7 @@ body.disconnected select {
       <button class="nav-btn nav-next" onclick="navStop('next')">Arrêt suivant →</button>
     </div>
     <p style="margin-top:14px; font-size:12px; color:rgba(255,255,255,0.25);">
-      Stream Deck → GET http://localhost:3000/api/next &nbsp;|&nbsp; GET http://localhost:3000/api/prev
+      Stream Deck → GET <span id='sd-url-next'></span> &nbsp;|&nbsp; GET <span id='sd-url-prev'></span>
     </p>
   </div>
 
@@ -689,6 +689,13 @@ function clearEditing() {
   document.getElementById('edit-badge').classList.remove('show');
 }
 
+// ── URL DYNAMIQUE (local vs en ligne) ──
+const _proto  = location.protocol === 'https:' ? 'https' : 'http';
+const _wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+const _host   = location.host; // ex: monapp.railway.app ou localhost:3000
+const API     = `${_proto}://${_host}`;
+const WS_URL  = `${_wsProto}://${_host}`;
+
 // WebSocket
 let ws;
 let _wasDisconnected = false;
@@ -735,13 +742,7 @@ function showReconnectedPopup() {
 }
 
 function connectWS() {
-  // On construit l'URL automatiquement :
-  // Si tu es en HTTPS (Render), on utilise 'wss', sinon 'ws'
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = protocol + '//' + window.location.host;
-
-  ws = new WebSocket(wsUrl);
-  
+  ws = new WebSocket(WS_URL);
   ws.onopen = () => {
     document.getElementById('ws-dot').className    = 'ws-dot connected';
     document.getElementById('ws-label').textContent = 'Connecté au serveur';
@@ -874,7 +875,7 @@ function saveState() {
   // Reset fin-btn car on repart sur pré-départ
   const finBtn = document.getElementById('fin-btn');
   if (finBtn) { finBtn.style.opacity = '0.35'; finBtn.style.pointerEvents = 'none'; }
-  fetch('http://localhost:3000/api/state', {
+  fetch(`${API}/api/state`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(s)
@@ -888,7 +889,7 @@ function lancerDepart() {
   const s = collectState();
   s.departed = true;
   state.departed = true;
-  fetch('/api/state', {
+  fetch(`${API}/api/state`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(s)
@@ -902,20 +903,20 @@ function lancerDepart() {
 }
 
 function finService() {
-  fetch('/api/fin').then(() => showToast('🏁 Fin de service !'));
+  fetch(`${API}/api/fin`).then(() => showToast('🏁 Fin de service !'));
 }
 
 function togglePax() {
-  fetch('/api/pax').then(() => showToast('🧳 PAX togglé !'));
+  fetch(`${API}/api/pax`).then(() => showToast('🧳 PAX togglé !'));
 }
 
 function navStop(dir) {
-  fetch('api/' + dir, { method: 'GET' });
+  fetch(`${API}/api/` + dir, { method: 'GET' });
 }
 
 function resetState() {
   if (!confirm('Réinitialiser ?')) return;
-  fetch('/api/state').then(r => r.json()).then(s => {
+  fetch(`${API}/api/state`).then(r => r.json()).then(s => {
     clearEditing();
     state = s;
     renderForm(s);
@@ -996,7 +997,7 @@ function togglePower() {
     actions.style.opacity       = '0.3';
     actions.style.pointerEvents = 'none';
   }
-  fetch('/api/power', {
+  fetch(`${API}/api/power`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ power: _overlayPowered })
@@ -1009,7 +1010,7 @@ function togglePower() {
 let _presetsCache = [];
 
 function fetchPresets() {
-  return fetch('/api/presets')
+  return fetch(`${API}/api/presets`)
     .then(r => r.json())
     .then(arr => { _presetsCache = Array.isArray(arr) ? arr : []; return _presetsCache; })
     .catch(() => { _presetsCache = []; return []; });
@@ -1059,7 +1060,7 @@ function savePreset() {
     eta:         current.eta,
     stops:       current.stops
   };
-  fetch('/api/presets', {
+  fetch(`${API}/api/presets`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preset)
@@ -1099,7 +1100,7 @@ function deletePreset(i) {
   const p = _presetsCache[i];
   const name = p?.name || '';
   if (!confirm(`Supprimer le preset "${name}" ?`)) return;
-  fetch(`/api/presets/${i}`, { method: 'DELETE' })
+  fetch(`${API}/api/presets/${i}`, { method: 'DELETE' })
     .then(r => r.json())
     .then(() => {
       renderPresets();

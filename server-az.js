@@ -6,7 +6,6 @@ const urlMod   = require('url');
 const qs       = require('querystring');
 const { WebSocketServer } = require('ws');
 
-// Render utilise process.env.PORT, sinon 3001 par défaut
 const PORT         = process.env.PORT || 3001;
 const SCOPES       = 'user-read-currently-playing user-read-playback-state';
 
@@ -39,12 +38,12 @@ const MIME = {
   '.json':'application/json', '.png':'image/png', '.svg':'image/svg+xml'
 };
 
-// ── CONFIGURATION DES REQUÊTES SPOTIFY ──
+// ── REQUÊTES VERS SERVEUR SPOTIFY ──
 function spotifyPost(pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
     const req = https.request({ 
-      hostname: 'accounts.spotify.com', 
+      hostname: 'accounts.spotify.com',
       path: pathname, 
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(b), ...headers }
@@ -56,7 +55,7 @@ function spotifyPost(pathname, body, headers={}) {
 function spotifyGet(pathname, headers={}) {
   return new Promise((res,rej) => {
     const req = https.request({ 
-      hostname: 'api.spotify.com', 
+      hostname: 'api.spotify.com',
       path: pathname, 
       method: 'GET', 
       headers 
@@ -113,7 +112,7 @@ async function poll() {
 }
 setInterval(poll, 1000);
 
-// ── ROUTEUR PRINCIPAL (HUB / TRAIN / SPOTIFY) ──
+// ── ROUTEUR DISTRIBUTION ──
 const server = http.createServer(async (req,res) => {
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS,DELETE');
@@ -167,7 +166,7 @@ const server = http.createServer(async (req,res) => {
     }); return;
   }
 
-  // ── ROUTES API TRAIN / BUS (Pour le Stream Deck) ──
+  // ── ROUTES API TRAIN / BUS ──
   if (pathname === '/api/state' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(state));
   }
@@ -182,39 +181,35 @@ const server = http.createServer(async (req,res) => {
     if (req.method === 'POST') {
       let body = ''; req.on('data', d => body += d); req.on('end', () => { try { const { power } = JSON.parse(body); powered = !!power; broadcast({ power: powered }); } catch(e){} });
     } else { powered = !powered; broadcast({ power: powered }); }
-    console.log(`🔌 [STREAM DECK] Power -> URL : ${baseUrl}/api/power`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, power: powered }));
   }
 
   if (pathname === '/api/depart') {
     state.departed = true; state.pax = false; state.fin = false; broadcast(state);
-    console.log(`🚂 [STREAM DECK] Départ -> URL : ${baseUrl}/api/depart`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/fin') {
     state.fin = true; state.pax = false; broadcast(state);
-    console.log(`🏁 [STREAM DECK] Terminus -> URL : ${baseUrl}/api/fin`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/pax') {
     state.pax = !state.pax; broadcast(state);
-    console.log(`👥 [STREAM DECK] Annonce PAX -> URL : ${baseUrl}/api/pax`);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, pax: state.pax }));
   }
   
   if (pathname === '/api/next') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur !== -1 && cur + 1 < state.stops.length) { state.stops[cur].status = 'passed'; state.stops[cur + 1].status = 'current'; }
-    broadcast(state); console.log(`⏭️ [STREAM DECK] Suivante -> URL : ${baseUrl}/api/next`);
+    broadcast(state); 
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/prev') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur > 0) { state.stops[cur].status = 'upcoming'; state.stops[cur - 1].status = 'current'; }
-    broadcast(state); console.log(`⏮️ [STREAM DECK] Précédente -> URL : ${baseUrl}/api/prev`);
+    broadcast(state); 
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
@@ -240,43 +235,25 @@ const server = http.createServer(async (req,res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, presets }));
   }
 
-// ── ROUTAGE DISTRIBUTION DES PAGES (HUB + DASHBOARDS) ──
+  // ── SERVIR LES PAGES ──
   let fp;
-  
-  if (pathname === '/') {
-      fp = path.join(__dirname, 'index.html');
-  }
-  else if (pathname === '/train') {
-      fp = path.join(__dirname, 'dashboard.html');
-  }
-  else if (pathname === '/train-overlay') {
-      fp = path.join(__dirname, 'overlay.html');
-  }
-  else if (pathname === '/dashboard') {
-      fp = path.join(__dirname, 'nowplaying-dashboard.html');
-  }
-  else if (pathname === '/overlay') {
-      fp = path.join(__dirname, 'nowplaying-overlay.html');
-  }
-  else {
-      fp = path.join(__dirname, pathname);
-  }
+  if (pathname === '/') { fp = path.join(__dirname, 'index.html'); }
+  else if (pathname === '/train') { fp = path.join(__dirname, 'dashboard.html'); }
+  else if (pathname === '/train-overlay') { fp = path.join(__dirname, 'overlay.html'); }
+  else if (pathname === '/dashboard') { fp = path.join(__dirname, 'nowplaying-dashboard.html'); }
+  else if (pathname === '/overlay') { fp = path.join(__dirname, 'nowplaying-overlay.html'); }
+  else { fp = path.join(__dirname, pathname); }
 
   const ext = path.extname(fp);
   if (!ext && fs.existsSync(fp + '.html')) fp += '.html';
 
   fs.readFile(fp, (err, data) => {
-    if (err) { 
-      // Si on arrive ici, c'est que le fichier est vraiment introuvable
-      console.log("Erreur 404 - Fichier non trouvé : " + fp); 
-      res.writeHead(404); 
-      return res.end('Not found'); 
-    }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'text/plain' }); 
-    res.end(data);
+    if (err) { res.writeHead(404); return res.end('Not found'); }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'text/plain' }); res.end(data);
   });
+});
 
-// ── WEBSOCKETS HUB MIGRÉ RENDER ──
+// ── WEBSOCKETS ──
 const wss = new WebSocketServer({ server });
 function broadcast(data) {
   const m = JSON.stringify(data);
@@ -287,8 +264,6 @@ wss.on('connection', ws => {
   ws.send(JSON.stringify({ power: powered }));
   if (powered) ws.send(JSON.stringify(state));
 });
-
-// Garder le canal de communication WebSockets ouvert sur Render
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
-server.listen(PORT, () => { console.log(`🚀 HUB GLOBAL PRÊT SUR LE PORT ${PORT}`); });
+server.listen(PORT, () => { console.log(`🚀 SERVEUR PRÊT SUR LE PORT ${PORT}`); });

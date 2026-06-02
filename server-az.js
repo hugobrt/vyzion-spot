@@ -242,6 +242,7 @@ const server = http.createServer(async (req,res) => {
   else if (pathname === '/train-overlay') { fp = path.join(__dirname, 'overlay.html'); }
   else if (pathname === '/dashboard') { fp = path.join(__dirname, 'nowplaying-dashboard.html'); }
   else if (pathname === '/overlay') { fp = path.join(__dirname, 'nowplaying-overlay.html'); }
+  else if (pathname === '/off') { fp = path.join(__dirname, 'off.html'); }
   else { fp = path.join(__dirname, pathname); }
 
   const ext = path.extname(fp);

@@ -233,6 +233,17 @@ function saveConfig(){
   tokenCache=null;
   closeConfig();
   loadAll();
+(async () => {
+    try {
+      const users = await twitchGet(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(c.username)}`);
+      const userId = users?.data?.[0]?.id || '';
+      await fetch('/api/twitch-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: c.clientId, clientSecret: c.clientSecret, userId, username: c.username })
+      });
+    } catch(e) {}
+  })();
 }
 
 function showError(msg){

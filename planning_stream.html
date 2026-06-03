@@ -12,18 +12,25 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 .glow-green{width:380px;height:380px;background:rgba(29,185,84,0.13);top:10%;right:15%;animation-delay:0s}
 .glow-blue{width:320px;height:320px;background:rgba(0,102,204,0.14);bottom:15%;left:15%;animation-delay:-4s}
 @keyframes glowDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,-20px) scale(1.1)}}
-
-/* HEADER */
 .page-header{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:860px;margin:0 auto 40px;flex-wrap:wrap;gap:16px}
 .back-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:rgba(255,255,255,0.5);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
 .back-btn:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8)}
 .page-title{font-size:28px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#1db954 50%,#3897ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .page-sub{font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;margin-top:4px}
-.header-actions{display:flex;gap:10px}
+.header-actions{display:flex;gap:10px;align-items:center}
 .btn-add{display:flex;align-items:center;gap:6px;padding:10px 20px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.35);border-radius:12px;color:rgba(29,185,84,0.9);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
-.btn-add:hover{background:rgba(29,185,84,0.22);border-color:rgba(29,185,84,0.6)}
-.public-link-btn{display:flex;align-items:center;gap:6px;padding:10px 20px;background:rgba(56,151,255,0.08);border:1px solid rgba(56,151,255,0.25);border-radius:12px;color:rgba(56,151,255,0.7);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.btn-add:hover{background:rgba(29,185,84,0.22)}
+.public-link-btn{display:flex;align-items:center;gap:6px;padding:10px 20px;background:rgba(56,151,255,0.08);border:1px solid rgba(56,151,255,0.25);border-radius:12px;color:rgba(56,151,255,0.7);font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s}
 .public-link-btn:hover{background:rgba(56,151,255,0.15);color:rgba(56,151,255,0.9)}
+
+/* SYNC STATUS */
+.sync-bar{position:relative;z-index:1;max-width:860px;margin:0 auto 20px;display:flex;align-items:center;gap:10px;padding:10px 18px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;font-size:12px;color:rgba(255,255,255,0.3)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);flex-shrink:0;transition:background 0.3s,box-shadow 0.3s}
+.sync-dot.syncing{background:#ffb300;animation:pulse 0.8s ease-in-out infinite}
+.sync-dot.ok{background:#00c853;box-shadow:0 0 6px rgba(0,200,83,0.6);animation:dotG 1.6s ease-in-out infinite}
+.sync-dot.error{background:#ff4444;box-shadow:0 0 6px rgba(255,60,60,0.5)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes dotG{0%,100%{box-shadow:0 0 4px rgba(0,200,83,0.5)}50%{box-shadow:0 0 10px rgba(0,200,83,0.9)}}
 
 /* CALENDRIER */
 .calendar-wrap{position:relative;z-index:1;max-width:860px;margin:0 auto 32px}
@@ -39,17 +46,15 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 .cal-cell.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
 .cal-cell.today{border-color:rgba(29,185,84,0.4);background:rgba(29,185,84,0.06)}
 .cal-cell.has-stream{border-color:rgba(56,151,255,0.4);background:rgba(56,151,255,0.06)}
-.cal-cell.has-stream:hover{background:rgba(56,151,255,0.12);border-color:rgba(56,151,255,0.6)}
+.cal-cell.has-stream:hover{background:rgba(56,151,255,0.12)}
 .cal-cell.past{opacity:0.45}
 .cal-date-num{font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);line-height:1}
 .cal-cell.today .cal-date-num{color:#1db954;font-weight:800}
 .cal-dot{width:6px;height:6px;border-radius:50%;background:#3897ff;margin-top:4px;box-shadow:0 0 6px rgba(56,151,255,0.6)}
-.cal-event-preview{font-size:9px;font-weight:700;color:rgba(56,151,255,0.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.cal-event-preview{font-size:9px;font-weight:700;color:rgba(56,151,255,0.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* LISTE STREAMS */
 .section-title{position:relative;z-index:1;max-width:860px;margin:0 auto 16px;font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.25);display:flex;align-items:center;gap:12px}
 .section-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
-
 .streams-list{position:relative;z-index:1;max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
 .stream-item{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px 22px;display:flex;align-items:center;gap:16px;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both;position:relative;overflow:hidden}
 .stream-item::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;border-radius:3px 0 0 3px}
@@ -71,7 +76,6 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 .btn-del:hover{background:rgba(255,60,60,0.1);border-color:rgba(255,60,60,0.3);color:#ff5555}
 .past .stream-title-text{color:rgba(255,255,255,0.4)}
 .past .stream-day{color:rgba(255,255,255,0.35)}
-.past-label{font-size:10px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);border-radius:999px;padding:2px 8px}
 .empty-state{text-align:center;padding:40px;color:rgba(255,255,255,0.2);font-size:14px}
 .empty-state span{font-size:32px;display:block;margin-bottom:12px;opacity:0.5}
 
@@ -96,8 +100,6 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 .btn-confirm:hover{background:rgba(29,185,84,0.25)}
 .btn-modal-cancel{padding:12px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.4);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
 .btn-modal-cancel:hover{background:rgba(255,255,255,0.08)}
-
-/* SIGNATURE */
 .hub-signature{position:fixed;bottom:24px;left:28px;z-index:10}
 .sig-powered{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
 .sig-vyzion{font-size:20px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#3897ff 0%,#1db954 60%,#a78bfa 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sigGradient 4s ease-in-out infinite alternate}
@@ -106,27 +108,28 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 </style>
 </head>
 <body>
-
 <div class="glow glow-green"></div>
 <div class="glow glow-blue"></div>
 
-<!-- HEADER -->
 <div class="page-header">
   <a href="/" class="back-btn">← Hub</a>
-  <div>
-    <div class="page-title">Planning Stream</div>
-    <div class="page-sub">Gère et affiche tes prochains streams</div>
-  </div>
+  <div><div class="page-title">Planning Stream</div><div class="page-sub">Gère tes prochains streams</div></div>
   <div class="header-actions">
-    <a href="vyz.drt-hbr.sbs/pbl" class="public-link-btn" target="_blank">🔗 Vue publique</a>
+    <a href="/pbl" class="public-link-btn" target="_blank">🔗 Vue publique</a>
     <button class="btn-add" onclick="openModal()">+ Ajouter</button>
   </div>
+</div>
+
+<!-- BARRE DE SYNC -->
+<div class="sync-bar">
+  <span class="sync-dot" id="sync-dot"></span>
+  <span id="sync-label">Chargement depuis le serveur...</span>
 </div>
 
 <!-- CALENDRIER -->
 <div class="calendar-wrap">
   <div class="cal-header">
-    <div class="cal-month" id="cal-month-label">Juin 2026</div>
+    <div class="cal-month" id="cal-month-label"></div>
     <div class="cal-nav">
       <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
       <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
@@ -135,15 +138,12 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
   <div class="cal-grid" id="cal-grid"></div>
 </div>
 
-<!-- STREAMS À VENIR -->
 <div class="section-title">À venir</div>
 <div class="streams-list" id="upcoming-list"></div>
-
-<!-- STREAMS PASSÉS -->
 <div class="section-title" style="margin-top:28px">Passés</div>
 <div class="streams-list" id="past-list"></div>
 
-<!-- MODALE AJOUT/EDIT -->
+<!-- MODALE -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-header">
@@ -160,14 +160,12 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
       <div class="field"><label>Durée estimée</label>
         <select id="f-duration">
           <option value="">Non définie</option>
-          <option value="1h">~1h</option>
-          <option value="2h">~2h</option>
-          <option value="3h">~3h</option>
-          <option value="4h+">4h+</option>
+          <option value="1h">~1h</option><option value="2h">~2h</option>
+          <option value="3h">~3h</option><option value="4h+">4h+</option>
         </select>
       </div>
     </div>
-    <div class="field"><label>Description (optionnel)</label><textarea id="f-desc" rows="2" placeholder="Infos, contexte, liens..."></textarea></div>
+    <div class="field"><label>Description</label><textarea id="f-desc" rows="2" placeholder="Infos, contexte..."></textarea></div>
     <div class="modal-actions">
       <button class="btn-confirm" onclick="saveStream()">💾 Sauvegarder</button>
       <button class="btn-modal-cancel" onclick="closeModal()">Annuler</button>
@@ -175,78 +173,104 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
   </div>
 </div>
 
-<!-- SIGNATURE -->
-<div class="hub-signature">
-  <div class="sig-powered">POWERED BY</div>
-  <div class="sig-vyzion">VYZION</div>
-</div>
+<div class="hub-signature"><div class="sig-powered">POWERED BY</div><div class="sig-vyzion">VYZION</div></div>
 
 <script>
-// ─── STORAGE ───
-const KEY='vyzion_schedule';
-function getStreams(){return JSON.parse(localStorage.getItem(KEY)||'[]')}
-function setStreams(d){localStorage.setItem(KEY,JSON.stringify(d))}
+const API = 'https://vyz.drt-hbr.sbs/api/planning';
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MONTHS_S = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
 
-// ─── CALENDRIER ───
-const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-let calYear=new Date().getFullYear();
-let calMonth=new Date().getMonth();
+let streams = [];
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
 
-function changeMonth(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+// ── SYNC DOT ──
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + state;
+  label.textContent = msg;
+}
 
-function renderCalendar(){
-  document.getElementById('cal-month-label').textContent=`${MONTHS[calMonth]} ${calYear}`;
-  const streams=getStreams();
-  const streamDates={};
-  streams.forEach(s=>{const d=s.date;if(!streamDates[d])streamDates[d]=[];streamDates[d].push(s);});
-  const today=new Date();
-  const firstDay=new Date(calYear,calMonth,1);
-  let startDow=(firstDay.getDay()+6)%7; // lundi=0
-  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
-  let html=DAYS.map(d=>`<div class="cal-day-label">${d}</div>`).join('');
-  for(let i=0;i<startDow;i++)html+=`<div class="cal-cell empty"></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday=d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
-    const isPast=new Date(calYear,calMonth,d)<new Date(today.getFullYear(),today.getMonth(),today.getDate());
-    const hasStream=streamDates[dateStr];
-    let cls='cal-cell';
-    if(isToday)cls+=' today';
-    if(hasStream)cls+=' has-stream';
-    if(isPast&&!isToday)cls+=' past';
-    const preview=hasStream?`<div class="cal-dot"></div><div class="cal-event-preview">${hasStream[0].title||'Stream'}</div>`:'';
-    html+=`<div class="${cls}" onclick="onCalClick('${dateStr}')"><div class="cal-date-num">${d}</div>${preview}</div>`;
+// ── LOAD DEPUIS SERVEUR ──
+async function loadFromServer() {
+  setSyncStatus('syncing', 'Chargement depuis le serveur...');
+  try {
+    const r = await fetch(API);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    streams = await r.json();
+    setSyncStatus('ok', 'Synchronisé avec le serveur · ' + streams.length + ' stream(s)');
+    render();
+  } catch(e) {
+    setSyncStatus('error', 'Erreur serveur — données locales utilisées');
+    streams = JSON.parse(localStorage.getItem('vyzion_schedule') || '[]');
+    render();
   }
-  document.getElementById('cal-grid').innerHTML=html;
 }
-function onCalClick(dateStr){openModal(null,dateStr);}
 
-// ─── RENDU LISTE ───
-function render(){
+// ── SYNC VERS SERVEUR ──
+async function syncToServer() {
+  setSyncStatus('syncing', 'Synchronisation...');
+  // Backup local aussi
+  localStorage.setItem('vyzion_schedule', JSON.stringify(streams));
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(streams)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    setSyncStatus('ok', 'Synchronisé · ' + d.count + ' stream(s) en ligne');
+  } catch(e) {
+    setSyncStatus('error', 'Sync échouée — sauvegardé en local uniquement');
+  }
+}
+
+// ── CALENDRIER ──
+function changeMonth(dir) { calMonth += dir; if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent = MONTHS[calMonth] + ' ' + calYear;
+  const streamDates = {};
+  streams.forEach(s => { if(!streamDates[s.date]) streamDates[s.date]=[]; streamDates[s.date].push(s); });
+  const today = new Date();
+  const firstDay = new Date(calYear, calMonth, 1);
+  let startDow = (firstDay.getDay()+6)%7;
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  let html = DAYS.map(d=>`<div class="cal-day-label">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) html+=`<div class="cal-cell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
+    const isPast = new Date(calYear,calMonth,d)<new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const hasStream = streamDates[ds];
+    let cls='cal-cell'+(isToday?' today':'')+(hasStream?' has-stream':'')+(isPast&&!isToday?' past':'');
+    const preview = hasStream?`<div class="cal-dot"></div><div class="cal-event-preview">${hasStream[0].title||'Stream'}</div>`:'';
+    html+=`<div class="${cls}" onclick="openModal(null,'${ds}')"><div class="cal-date-num">${d}</div>${preview}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function render() {
   renderCalendar();
-  const streams=getStreams();
-  const now=new Date();
-  const upcoming=streams.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))>=now).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
-  const past=streams.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))<now).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('upcoming-list').innerHTML=upcoming.length?upcoming.map((s,i)=>streamCard(s,i,'upcoming')).join(''):`<div class="empty-state"><span>📅</span>Aucun stream planifié.<br>Clique sur "+ Ajouter" pour commencer !</div>`;
-  document.getElementById('past-list').innerHTML=past.length?past.slice(0,5).map((s,i)=>streamCard(s,i,'past')).join(''):`<div class="empty-state" style="padding:20px"><span style="font-size:20px">🕐</span>Pas encore de streams passés.</div>`;
+  const now = new Date();
+  const upcoming = streams.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))>=now).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  const past = streams.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))<now).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('upcoming-list').innerHTML = upcoming.length ? upcoming.map((s,i)=>streamCard(s,i,'upcoming')).join('') : `<div class="empty-state"><span>📅</span>Aucun stream planifié.</div>`;
+  document.getElementById('past-list').innerHTML = past.length ? past.slice(0,5).map((s,i)=>streamCard(s,i,'past')).join('') : `<div class="empty-state" style="padding:20px"><span style="font-size:20px">🕐</span>Pas encore de passés.</div>`;
 }
 
-function streamCard(s,i,type){
-  const dt=new Date(s.date+'T12:00');
-  const day=dt.getDate();
-  const month=MONTHS[dt.getMonth()].substring(0,3).toUpperCase();
-  const isPast=type==='past';
+function streamCard(s, i, type) {
+  const dt = new Date(s.date+'T12:00');
   return `<div class="stream-item ${type}" style="animation-delay:${i*0.05}s">
-    <div class="stream-date-block"><div class="stream-day">${day}</div><div class="stream-month">${month}</div></div>
+    <div class="stream-date-block"><div class="stream-day">${dt.getDate()}</div><div class="stream-month">${MONTHS_S[dt.getMonth()]}</div></div>
     <div class="stream-info">
       <div class="stream-title-text">${s.title||'Sans titre'}</div>
       <div class="stream-meta">
         ${s.time?`<span class="stream-time">🕐 ${s.time}</span>`:''}
         ${s.game?`<span class="stream-game-tag">🎮 ${s.game}</span>`:''}
         ${s.duration?`<span class="stream-game-tag">⏱ ${s.duration}</span>`:''}
-        ${isPast?`<span class="past-label">Terminé</span>`:''}
       </div>
       ${s.desc?`<div class="stream-desc">${s.desc.substring(0,80)}${s.desc.length>80?'...':''}</div>`:''}
     </div>
@@ -257,37 +281,44 @@ function streamCard(s,i,type){
   </div>`;
 }
 
-// ─── MODAL ───
-let editId=null;
-function openModal(id,prefillDate){
-  editId=id||null;
-  const s=id?getStreams().find(x=>x.id===id):null;
-  document.getElementById('modal-title').textContent=id?'✏️ Modifier le stream':'📅 Nouveau stream';
-  document.getElementById('f-title').value=s?.title||'';
-  document.getElementById('f-date').value=s?.date||(prefillDate||'');
-  document.getElementById('f-time').value=s?.time||'21:00';
-  document.getElementById('f-game').value=s?.game||'';
-  document.getElementById('f-duration').value=s?.duration||'';
-  document.getElementById('f-desc').value=s?.desc||'';
+// ── MODAL ──
+let editId = null;
+function openModal(id, prefillDate) {
+  editId = id||null;
+  const s = id ? streams.find(x=>x.id===id) : null;
+  document.getElementById('modal-title').textContent = id ? '✏️ Modifier' : '📅 Nouveau stream';
+  document.getElementById('f-title').value = s?.title||'';
+  document.getElementById('f-date').value = s?.date||(prefillDate||'');
+  document.getElementById('f-time').value = s?.time||'21:00';
+  document.getElementById('f-game').value = s?.game||'';
+  document.getElementById('f-duration').value = s?.duration||'';
+  document.getElementById('f-desc').value = s?.desc||'';
   document.getElementById('modal-overlay').classList.add('show');
   setTimeout(()=>document.getElementById('f-title').focus(),100);
 }
-function closeModal(){document.getElementById('modal-overlay').classList.remove('show');editId=null;}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); editId=null; }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
-function saveStream(){
-  const title=document.getElementById('f-title').value.trim();
-  const date=document.getElementById('f-date').value;
-  if(!title||!date){document.getElementById('f-title').style.borderColor='rgba(255,60,60,0.5)';setTimeout(()=>document.getElementById('f-title').style.borderColor='',1500);return;}
-  const streams=getStreams();
-  const newS={id:editId||(Date.now().toString(36)),title,date,time:document.getElementById('f-time').value,game:document.getElementById('f-game').value.trim(),duration:document.getElementById('f-duration').value,desc:document.getElementById('f-desc').value.trim()};
-  if(editId){const idx=streams.findIndex(s=>s.id===editId);if(idx>-1)streams[idx]=newS;}else{streams.push(newS);}
-  setStreams(streams);closeModal();render();
+function saveStream() {
+  const title = document.getElementById('f-title').value.trim();
+  const date = document.getElementById('f-date').value;
+  if(!title||!date) {
+    document.getElementById('f-title').style.borderColor='rgba(255,60,60,0.5)';
+    setTimeout(()=>document.getElementById('f-title').style.borderColor='',1500); return;
+  }
+  const newS = { id: editId||(Date.now().toString(36)+Math.random().toString(36).slice(2,5)), title, date, time: document.getElementById('f-time').value, game: document.getElementById('f-game').value.trim(), duration: document.getElementById('f-duration').value, desc: document.getElementById('f-desc').value.trim() };
+  if(editId) { const idx=streams.findIndex(s=>s.id===editId); if(idx>-1) streams[idx]=newS; }
+  else streams.push(newS);
+  closeModal(); render(); syncToServer();
 }
-function deleteStream(id){if(!confirm('Supprimer ce stream ?'))return;setStreams(getStreams().filter(s=>s.id!==id));render();}
 
-// ─── INIT ───
-render();
+function deleteStream(id) {
+  if(!confirm('Supprimer ce stream du planning ?')) return;
+  streams = streams.filter(s=>s.id!==id);
+  render(); syncToServer();
+}
+
+loadFromServer();
 </script>
 </body>
 </html>

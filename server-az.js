@@ -1,16 +1,17 @@
-const http     = require('http');
-const https    = require('https');
-const fs       = require('fs');
-const path     = require('path');
-const urlMod   = require('url');
-const qs       = require('querystring');
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const urlMod = require('url');
+const qs = require('querystring');
 const { WebSocketServer } = require('ws');
 
-const PORT         = process.env.PORT || 3001;
-const SCOPES       = 'user-read-currently-playing user-read-playback-state';
+const PORT = process.env.PORT || 3001;
+const SCOPES = 'user-read-currently-playing user-read-playback-state';
 
-const CONFIG_FILE  = path.join(__dirname, 'spotify-config.json');
+const CONFIG_FILE = path.join(__dirname, 'spotify-config.json');
 const PRESETS_FILE = path.join(__dirname, 'presets.json');
+const PLANNING_FILE = path.join(__dirname, 'planning.json'); // ← NOUVEAU
 
 // ── DATA SPOTIFY ──
 let cfg = { clientId:'', clientSecret:'', refreshToken:'', accessToken:'', tokenExpiry:0 };
@@ -20,11 +21,20 @@ if (fs.existsSync(CONFIG_FILE)) {
 function saveCfg() { fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg,null,2)); }
 
 let currentTrack = null;
-let isConnected  = false;
+let isConnected = false;
 
 // ── DATA TRAIN / BUS ──
 let state = { operator: 'SNCF', trainNumber: '', origin: '', terminus: '', eta: '', stops: [], departed: false, fin: false, pax: false };
 let powered = false;
+
+// ── DATA PLANNING ── NOUVEAU
+let planningData = [];
+if (fs.existsSync(PLANNING_FILE)) {
+  try { planningData = JSON.parse(fs.readFileSync(PLANNING_FILE, 'utf8')); } catch(e) {}
+}
+function savePlanning() {
+  try { fs.writeFileSync(PLANNING_FILE, JSON.stringify(planningData, null, 2)); } catch(e) {}
+}
 
 function loadPresets() {
   try { return fs.existsSync(PRESETS_FILE) ? JSON.parse(fs.readFileSync(PRESETS_FILE, 'utf8')) : []; } catch (e) { return []; }
@@ -33,7 +43,7 @@ function savePresets(presets) {
   try { fs.writeFileSync(PRESETS_FILE, JSON.stringify(presets, null, 2), 'utf8'); return true; } catch (e) { return false; }
 }
 
-const MIME = { 
+const MIME = {
   '.html':'text/html', '.css':'text/css', '.js':'application/javascript',
   '.json':'application/json', '.png':'image/png', '.svg':'image/svg+xml'
 };
@@ -42,10 +52,8 @@ const MIME = {
 function spotifyPost(pathname, body, headers={}) {
   return new Promise((res,rej) => {
     const b = typeof body === 'string' ? body : qs.stringify(body);
-    const req = https.request({ 
-      hostname: 'accounts.spotify.com',
-      path: pathname, 
-      method: 'POST',
+    const req = https.request({
+      hostname: 'accounts.spotify.com', path: pathname, method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(b), ...headers }
     }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{ res(JSON.parse(d)); }catch(e){ res({}); } }); });
     req.on('error',rej); req.write(b); req.end();
@@ -54,11 +62,8 @@ function spotifyPost(pathname, body, headers={}) {
 
 function spotifyGet(pathname, headers={}) {
   return new Promise((res,rej) => {
-    const req = https.request({ 
-      hostname: 'api.spotify.com',
-      path: pathname, 
-      method: 'GET', 
-      headers 
+    const req = https.request({
+      hostname: 'api.spotify.com', path: pathname, method: 'GET', headers
     }, r => {
       let d=''; r.on('data',c=>d+=c);
       r.on('end',()=>{
@@ -170,6 +175,7 @@ const server = http.createServer(async (req,res) => {
   if (pathname === '/api/state' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(state));
   }
+
   if (pathname === '/api/state' && req.method === 'POST') {
     let body = ''; req.on('data', d => body += d);
     req.on('end', () => {
@@ -198,31 +204,32 @@ const server = http.createServer(async (req,res) => {
     state.pax = !state.pax; broadcast(state);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, pax: state.pax }));
   }
-  
+
   if (pathname === '/api/next') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur !== -1 && cur + 1 < state.stops.length) { state.stops[cur].status = 'passed'; state.stops[cur + 1].status = 'current'; }
-    broadcast(state); 
+    broadcast(state);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/prev') {
     const cur = state.stops.findIndex(s => s.status === 'current');
     if (cur > 0) { state.stops[cur].status = 'upcoming'; state.stops[cur - 1].status = 'current'; }
-    broadcast(state); 
+    broadcast(state);
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true }));
   }
 
   if (pathname === '/api/presets' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(loadPresets()));
   }
+
   if (pathname === '/api/presets' && req.method === 'POST') {
     let body = ''; req.on('data', d => body += d);
     req.on('end', () => {
       try {
         const data = JSON.parse(body);
-        if (Array.isArray(data)) { savePresets(data); } 
-        else if (data && typeof data === 'object' && data.name) { const presets = loadPresets(); presets.push(data); savePresets(presets); } 
+        if (Array.isArray(data)) { savePresets(data); }
+        else if (data && typeof data === 'object' && data.name) { const presets = loadPresets(); presets.push(data); savePresets(presets); }
         res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, presets: loadPresets() }));
       } catch(e) { res.writeHead(400); res.end('Bad JSON'); }
     }); return;
@@ -233,6 +240,35 @@ const server = http.createServer(async (req,res) => {
     const idx = parseInt(delMatch[1], 10); const presets = loadPresets();
     if (idx >= 0 && idx < presets.length) { presets.splice(idx, 1); savePresets(presets); }
     res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, presets }));
+  }
+
+  // ── ROUTES PLANNING ── NOUVEAU
+  if (pathname === '/api/planning' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(planningData));
+  }
+
+  if (pathname === '/api/planning' && req.method === 'POST') {
+    let body = ''; req.on('data', d => body += d);
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body);
+        if (!Array.isArray(parsed)) { res.writeHead(400); return res.end('Expected array'); }
+        planningData = parsed;
+        savePlanning();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, count: planningData.length }));
+      } catch(e) { res.writeHead(400); res.end('Bad JSON'); }
+    }); return;
+  }
+
+  const planDelMatch = pathname.match(/^\/api\/planning\/([a-z0-9]+)$/);
+  if (planDelMatch && req.method === 'DELETE') {
+    const id = planDelMatch[1];
+    planningData = planningData.filter(s => s.id !== id);
+    savePlanning();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ ok: true }));
   }
 
   // ── SERVIR LES PAGES ──
@@ -270,7 +306,7 @@ wss.on('connection', ws => {
 });
 setInterval(() => { wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'ping' })); }); }, 30000);
 
-// ── KEEP-ALIVE : auto-ping toutes les 4 minutes pour éviter le sleep Render ──
+// ── KEEP-ALIVE ──
 const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 setInterval(() => {
   const proto = SELF_URL.startsWith('https') ? https : http;

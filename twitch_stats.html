@@ -32,8 +32,8 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 @keyframes dotGreen{0%,100%{box-shadow:0 0 4px rgba(0,200,83,0.5)}50%{box-shadow:0 0 10px rgba(0,200,83,0.9)}}
 
 /* CONFIG PANEL */
-.config-panel{position:relative;z-index:1;max-width:960px;margin:0 auto 28px;background:rgba(145,70,255,0.04);border:1px solid rgba(145,70,255,0.25);border-radius:20px;padding:24px 28px;overflow:hidden;max-height:0;opacity:0;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease,padding 0.3s ease,margin 0.3s ease;padding-top:0;padding-bottom:0;margin-bottom:0}
-.config-panel.open{max-height:400px;opacity:1;padding-top:24px;padding-bottom:24px;margin-bottom:28px}
+.config-panel{position:relative;z-index:1;max-width:960px;margin:0 auto;background:rgba(145,70,255,0.04);border:1px solid rgba(145,70,255,0.25);border-radius:20px;padding:24px 28px;display:none}
+.config-panel.open{display:block;animation:cardIn 0.35s cubic-bezier(0.34,1.4,0.64,1) both;margin-bottom:28px}
 .config-title{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(145,70,255,0.7);margin-bottom:16px}
 .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:600px){.config-grid{grid-template-columns:1fr}}
@@ -197,19 +197,21 @@ function setCfg(c){localStorage.setItem(KEY_CFG,JSON.stringify(c))}
 let tokenCache=null, tokenExpiry=0;
 let configOpen=false;
 
-// ─── TOGGLE CONFIG PANEL (CORRIGÉ) ───
+// ─── TOGGLE CONFIG PANEL ───
 function toggleConfig(){
-  configOpen=!configOpen;
   const panel=document.getElementById('config-panel');
-  if(configOpen){
+  const isOpen=panel.classList.contains('open');
+  if(isOpen){
+    panel.classList.remove('open');
+    configOpen=false;
+  } else {
     const c=getCfg()||{};
     document.getElementById('cfg-client-id').value=c.clientId||'';
     document.getElementById('cfg-client-secret').value=c.clientSecret||'';
     document.getElementById('cfg-username').value=c.username||'';
     panel.classList.add('open');
-    setTimeout(()=>document.getElementById('cfg-client-id').focus(),350);
-  } else {
-    panel.classList.remove('open');
+    configOpen=true;
+    setTimeout(()=>{ const el=document.getElementById('cfg-client-id'); if(el) el.focus(); },50);
   }
 }
 function closeConfig(){
@@ -352,9 +354,9 @@ function renderEmpty(){
     <div class="stat-card blue"><div class="stat-icon">👁️</div><div class="stat-label">Total vues</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>
     <div class="stat-card green"><div class="stat-icon">🎮</div><div class="stat-label">Streams</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>
     <div class="stat-card orange"><div class="stat-icon">⭐</div><div class="stat-label">Avg viewers</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>`;
-  document.getElementById('bar-viewers').innerHTML='<div class="no-data">Configure l'API pour voir les données</div>';
-  document.getElementById('bar-duration').innerHTML='<div class="no-data">Configure l'API pour voir les données</div>';
-  document.getElementById('streams-list').innerHTML='<div class="stream-row"><div class="no-data">Clique sur "Configurer API" en haut à droite pour commencer.</div></div>';
+  document.getElementById('bar-viewers').innerHTML=`<div class="no-data">Configure l'API pour voir les données</div>`;
+  document.getElementById('bar-duration').innerHTML=`<div class="no-data">Configure l'API pour voir les données</div>`;
+  document.getElementById('streams-list').innerHTML=`<div class="stream-row"><div class="no-data">Clique sur "Configurer API" en haut à droite pour commencer.</div></div>`;
 }
 
 // ─── LOAD ALL ───

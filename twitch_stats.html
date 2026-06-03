@@ -120,6 +120,9 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
 .sig-vyzion{font-size:20px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#3897ff 0%,#1db954 60%,#a78bfa 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sigGradient 4s ease-in-out infinite alternate}
 @keyframes sigGradient{0%{background-position:0 50%}100%{background-position:100% 50%}}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+        .rapport-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(145,70,255,0.08); border:1px solid rgba(145,70,255,0.25); border-radius:10px; color:rgba(145,70,255,0.8); font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; transition:all 0.2s; }
+        .rapport-btn:hover { background:rgba(145,70,255,0.18); border-color:rgba(145,70,255,0.5); color:rgba(145,70,255,1); }
 </style>
 </head>
 <body>
@@ -133,6 +136,7 @@ body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-he
     <div class="page-sub">Toutes les stats de ta chaîne</div>
   </div>
   <div class="header-right">
+    <a href="/rapport" class="rapport-btn">📋 Rapports</a>
     <button class="refresh-btn" id="refresh-btn" onclick="loadAll()"><span class="ri">↻</span> Actualiser</button>
     <div class="connect-badge" id="connect-badge" onclick="toggleConfig()">
       <span class="connect-dot" id="connect-dot"></span>

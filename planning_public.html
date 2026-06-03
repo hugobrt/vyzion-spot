@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Stream — drt_hbr</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-height:100vh;padding:40px 20px 80px;overflow-x:hidden;position:relative}
+.glow{position:fixed;border-radius:50%;filter:blur(130px);z-index:0;animation:glowDrift 9s ease-in-out infinite alternate;pointer-events:none}
+.glow-green{width:420px;height:420px;background:rgba(29,185,84,0.11);top:5%;right:10%;animation-delay:0s}
+.glow-blue{width:360px;height:360px;background:rgba(0,102,204,0.13);bottom:10%;left:10%;animation-delay:-5s}
+@keyframes glowDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(25px,-18px) scale(1.08)}}
+
+/* HEADER PUBLIC */
+.pub-header{position:relative;z-index:1;max-width:720px;margin:0 auto 56px;text-align:center}
+.pub-brand{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:16px}
+.pub-title{font-size:42px;font-weight:800;letter-spacing:-1.5px;background:linear-gradient(135deg,#fff 0%,#1db954 45%,#3897ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;margin-bottom:10px}
+.pub-sub{font-size:14px;color:rgba(255,255,255,0.3);line-height:1.6}
+.twitch-link{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:10px 22px;background:rgba(145,70,255,0.1);border:1px solid rgba(145,70,255,0.3);border-radius:999px;font-size:13px;font-weight:700;color:rgba(145,70,255,0.85);text-decoration:none;transition:all 0.25s}
+.twitch-link:hover{background:rgba(145,70,255,0.2);border-color:rgba(145,70,255,0.5);transform:translateY(-2px)}
+.twitch-icon{font-size:16px}
+
+/* NEXT STREAM BIG */
+.next-wrap{position:relative;z-index:1;max-width:720px;margin:0 auto 48px}
+.next-card{background:linear-gradient(135deg,rgba(29,185,84,0.08) 0%,rgba(56,151,255,0.06) 100%);border:1px solid rgba(29,185,84,0.25);border-radius:24px;padding:32px 36px;display:flex;align-items:center;gap:28px;animation:cardIn 0.7s cubic-bezier(0.34,1.4,0.64,1) both;position:relative;overflow:hidden}
+.next-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(29,185,84,0.4),rgba(56,151,255,0.3),transparent)}
+.next-label{position:absolute;top:16px;right:20px;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(29,185,84,0.6);background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:999px;padding:3px 10px}
+.next-date-block{display:flex;flex-direction:column;align-items:center;min-width:70px;gap:2px}
+.next-day{font-size:52px;font-weight:800;line-height:1;background:linear-gradient(135deg,#1db954,#3897ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.next-month{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4)}
+.next-info{flex:1;min-width:0}
+.next-stream-title{font-size:22px;font-weight:800;color:rgba(255,255,255,0.9);line-height:1.2;margin-bottom:8px}
+.next-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.next-time{font-size:14px;font-weight:700;color:rgba(29,185,84,0.85)}
+.next-game{font-size:13px;color:rgba(255,255,255,0.35);font-weight:600}
+.next-dur{font-size:12px;color:rgba(255,255,255,0.25)}
+.next-desc{font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;line-height:1.6}
+.countdown-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:90px}
+.countdown-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.countdown-time{font-family:'SF Mono','Fira Code',monospace;font-size:22px;font-weight:800;color:rgba(29,185,84,0.9);letter-spacing:2px;text-align:center;line-height:1.2}
+.countdown-time.soon{color:#ffb300;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+@media(max-width:600px){.next-card{flex-direction:column;gap:20px}.countdown-wrap{width:100%;flex-direction:row;justify-content:center;gap:12px}}
+
+/* LISTE */
+.section-label{position:relative;z-index:1;max-width:720px;margin:0 auto 16px;font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2);display:flex;align-items:center;gap:12px}
+.section-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+.streams-list{position:relative;z-index:1;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.stream-item{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:18px 22px;display:flex;align-items:center;gap:16px;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both;transition:all 0.2s}
+.stream-item:hover{background:rgba(255,255,255,0.04);border-color:rgba(29,185,84,0.2);transform:translateX(4px)}
+.stream-item.past{opacity:0.45}
+.stream-item.past:hover{opacity:0.6;transform:none}
+.s-date{display:flex;flex-direction:column;align-items:center;min-width:44px;gap:1px}
+.s-day{font-size:20px;font-weight:800;color:rgba(255,255,255,0.7);line-height:1}
+.s-month{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.25)}
+.s-sep{width:1px;height:36px;background:rgba(255,255,255,0.07);flex-shrink:0}
+.s-info{flex:1;min-width:0}
+.s-title{font-size:14px;font-weight:700;color:rgba(255,255,255,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-meta{font-size:11px;color:rgba(255,255,255,0.25);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.s-game{color:rgba(56,151,255,0.6);font-weight:600}
+.s-time{color:rgba(29,185,84,0.6);font-weight:600}
+.past-chip{font-size:9px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);border-radius:999px;padding:2px 8px}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px;color:rgba(255,255,255,0.15);font-size:13px}
+.empty-emoji{font-size:36px;display:block;margin-bottom:12px;opacity:0.4}
+
+/* NO UPCOMING */
+.no-upcoming{position:relative;z-index:1;max-width:720px;margin:0 auto 48px;padding:32px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:20px;text-align:center;color:rgba(255,255,255,0.2);font-size:13px;animation:cardIn 0.6s cubic-bezier(0.34,1.4,0.64,1) both}
+.no-upcoming span{font-size:28px;display:block;margin-bottom:10px;opacity:0.4}
+
+/* FOOTER */
+.pub-footer{position:relative;z-index:1;max-width:720px;margin:56px auto 0;text-align:center;font-size:11px;color:rgba(255,255,255,0.12);display:flex;flex-direction:column;align-items:center;gap:6px}
+.footer-vyzion{font-size:18px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#3897ff 0%,#1db954 60%,#a78bfa 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sigGrad 4s ease-in-out infinite alternate}
+@keyframes sigGrad{0%{background-position:0 50%}100%{background-position:100% 50%}}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+</style>
+</head>
+<body>
+<div class="glow glow-green"></div>
+<div class="glow glow-blue"></div>
+
+<div class="pub-header">
+  <div class="pub-brand">POWERED BY VYZION</div>
+  <div class="pub-title">Planning Stream</div>
+  <div class="pub-sub">Les prochains streams — rejoins le live !</div>
+  <a href="https://twitch.tv/drt_hbr" target="_blank" class="twitch-link">
+    <span class="twitch-icon">🎮</span> Suivre sur Twitch
+  </a>
+</div>
+
+<!-- PROCHAIN STREAM -->
+<div id="next-section"></div>
+
+<!-- LISTE À VENIR -->
+<div id="upcoming-section"></div>
+
+<!-- STREAMS PASSÉS -->
+<div id="past-section"></div>
+
+<div class="pub-footer">
+  <div>Calendrier géré via le hub privé Vyzion</div>
+  <div class="footer-vyzion">VYZION</div>
+</div>
+
+<script>
+const KEY = 'vyzion_schedule';
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MONTHS_SHORT = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
+
+function getStreams(){return JSON.parse(localStorage.getItem(KEY)||'[]')}
+
+function render(){
+  const streams = getStreams();
+  const now = new Date();
+  const all = streams.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  const upcoming = all.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))>=now);
+  const past = all.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))<now).reverse();
+
+  // ── NEXT STREAM ──
+  if(upcoming.length){
+    const next = upcoming[0];
+    const dt = new Date(next.date+'T12:00');
+    const target = new Date(next.date+'T'+(next.time||'00:00'));
+    document.getElementById('next-section').innerHTML = `
+      <div class="next-wrap">
+        <div class="next-card">
+          <div class="next-label">PROCHAIN STREAM</div>
+          <div class="next-date-block">
+            <div class="next-day">${dt.getDate()}</div>
+            <div class="next-month">${MONTHS_SHORT[dt.getMonth()]}</div>
+          </div>
+          <div class="next-info">
+            <div class="next-stream-title">${next.title||'Stream à venir'}</div>
+            <div class="next-meta">
+              ${next.time?`<span class="next-time">🕐 ${next.time}</span>`:''}
+              ${next.game?`<span class="next-game">🎮 ${next.game}</span>`:''}
+              ${next.duration?`<span class="next-dur">⏱ ${next.duration}</span>`:''}
+            </div>
+            ${next.desc?`<div class="next-desc">${next.desc}</div>`:''}
+          </div>
+          <div class="countdown-wrap">
+            <div class="countdown-label">Dans</div>
+            <div class="countdown-time" id="countdown">--:--</div>
+          </div>
+        </div>
+      </div>`;
+    startCountdown(target);
+  } else {
+    document.getElementById('next-section').innerHTML = `
+      <div class="no-upcoming"><span>📅</span>Aucun stream planifié pour le moment.<br>Reviens bientôt !</div>`;
+  }
+
+  // ── LISTE À VENIR (hors le 1er) ──
+  const rest = upcoming.slice(1);
+  if(rest.length){
+    document.getElementById('upcoming-section').innerHTML = `
+      <div class="section-label" style="margin-top:0">À venir</div>
+      <div class="streams-list">${rest.map((s,i)=>streamRow(s,i,false)).join('')}</div>`;
+  } else {
+    document.getElementById('upcoming-section').innerHTML = '';
+  }
+
+  // ── PASSÉS ──
+  if(past.length){
+    document.getElementById('past-section').innerHTML = `
+      <div class="section-label" style="margin-top:32px">Streams passés</div>
+      <div class="streams-list">${past.slice(0,8).map((s,i)=>streamRow(s,i,true)).join('')}</div>`;
+  } else {
+    document.getElementById('past-section').innerHTML = '';
+  }
+}
+
+function streamRow(s, i, isPast){
+  const dt = new Date(s.date+'T12:00');
+  return `<div class="stream-item ${isPast?'past':''}" style="animation-delay:${i*0.05}s">
+    <div class="s-date"><div class="s-day">${dt.getDate()}</div><div class="s-month">${MONTHS_SHORT[dt.getMonth()]}</div></div>
+    <div class="s-sep"></div>
+    <div class="s-info">
+      <div class="s-title">${s.title||'Sans titre'}</div>
+      <div class="s-meta">
+        ${s.time?`<span class="s-time">${s.time}</span>`:''}
+        ${s.game?`<span class="s-game">${s.game}</span>`:''}
+        ${isPast?'<span class="past-chip">Terminé</span>':''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── COUNTDOWN ──
+function startCountdown(target){
+  function update(){
+    const el = document.getElementById('countdown');
+    if(!el) return;
+    const diff = target - Date.now();
+    if(diff<=0){el.textContent='C'est LIVE !';el.classList.add('soon');return;}
+    const days = Math.floor(diff/86400000);
+    const hours = Math.floor((diff%86400000)/3600000);
+    const mins = Math.floor((diff%3600000)/60000);
+    if(diff<3600000){
+      el.textContent = `${mins}min`;
+      el.classList.add('soon');
+    } else if(diff<86400000){
+      el.textContent = `${hours}h${String(mins).padStart(2,'0')}`;
+    } else {
+      el.textContent = `${days}j ${hours}h`;
+    }
+  }
+  update();
+  setInterval(update, 30000);
+}
+
+render();
+// Rafraîchit toutes les 5 min pour tenir compte des mises à jour
+setInterval(render, 300000);
+</script>
+</body>
+</html>

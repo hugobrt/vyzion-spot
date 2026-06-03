@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyzion — Stats Twitch</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-height:100vh;padding:32px 20px 60px;overflow-x:hidden;position:relative}
+.glow{position:fixed;border-radius:50%;filter:blur(120px);z-index:0;animation:glowDrift 8s ease-in-out infinite alternate;pointer-events:none}
+.glow-purple{width:400px;height:400px;background:rgba(168,139,250,0.13);top:10%;left:15%;animation-delay:0s}
+.glow-blue{width:350px;height:350px;background:rgba(0,102,204,0.15);bottom:15%;right:15%;animation-delay:-4s}
+@keyframes glowDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,-20px) scale(1.1)}}
+
+.page-header{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto 40px;flex-wrap:wrap;gap:16px}
+.back-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.back-btn:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8)}
+.page-title{font-size:28px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#a78bfa 50%,#3897ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-sub{font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;margin-top:4px}
+.header-right{display:flex;gap:10px;align-items:center}
+.refresh-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;color:rgba(255,255,255,0.4);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.refresh-btn:hover{background:rgba(168,139,250,0.1);border-color:rgba(168,139,250,0.3);color:rgba(168,139,250,0.8)}
+.refresh-btn.spinning .ri{display:inline-block;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.connect-badge{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(145,70,255,0.1);border:1px solid rgba(145,70,255,0.3);border-radius:12px;font-size:12px;font-weight:700;color:rgba(145,70,255,0.9);cursor:pointer;transition:all 0.2s;user-select:none}
+.connect-badge:hover{background:rgba(145,70,255,0.2);border-color:rgba(145,70,255,0.5)}
+.connect-badge.connected{background:rgba(0,200,83,0.08);border-color:rgba(0,200,83,0.3);color:rgba(0,200,83,0.9)}
+.connect-dot{width:7px;height:7px;border-radius:50%;background:rgba(145,70,255,0.8);flex-shrink:0;animation:dotPurple 1.5s ease-in-out infinite}
+.connect-badge.connected .connect-dot{background:#00c853;animation:dotGreen 1.6s ease-in-out infinite}
+@keyframes dotPurple{0%,100%{box-shadow:0 0 4px rgba(145,70,255,0.5)}50%{box-shadow:0 0 10px rgba(145,70,255,0.9)}}
+@keyframes dotGreen{0%,100%{box-shadow:0 0 4px rgba(0,200,83,0.5)}50%{box-shadow:0 0 10px rgba(0,200,83,0.9)}}
+
+/* CONFIG PANEL */
+.config-panel{position:relative;z-index:1;max-width:960px;margin:0 auto 28px;background:rgba(145,70,255,0.04);border:1px solid rgba(145,70,255,0.25);border-radius:20px;padding:24px 28px;overflow:hidden;max-height:0;opacity:0;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease,padding 0.3s ease,margin 0.3s ease;padding-top:0;padding-bottom:0;margin-bottom:0}
+.config-panel.open{max-height:400px;opacity:1;padding-top:24px;padding-bottom:24px;margin-bottom:28px}
+.config-title{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(145,70,255,0.7);margin-bottom:16px}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.config-grid{grid-template-columns:1fr}}
+.config-field label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:6px}
+.config-field input{width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s}
+.config-field input:focus{border-color:rgba(145,70,255,0.5)}
+.config-field input::placeholder{color:rgba(255,255,255,0.2)}
+.config-actions{display:flex;gap:10px;margin-top:16px}
+.btn-save{padding:10px 24px;background:rgba(145,70,255,0.15);border:1px solid rgba(145,70,255,0.4);border-radius:10px;color:rgba(145,70,255,0.9);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-save:hover{background:rgba(145,70,255,0.28)}
+.btn-cancel{padding:10px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:rgba(255,255,255,0.4);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-cancel:hover{background:rgba(255,255,255,0.08)}
+
+/* STATS GRID */
+.stats-grid{position:relative;z-index:1;max-width:960px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:800px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stats-grid{grid-template-columns:1fr 1fr}}
+.stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:22px 18px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both;transition:border-color 0.3s,box-shadow 0.3s,transform 0.3s}
+.stat-card:hover{transform:translateY(-4px)}
+.stat-card:nth-child(1){animation-delay:0.1s}.stat-card:nth-child(2){animation-delay:0.15s}.stat-card:nth-child(3){animation-delay:0.2s}.stat-card:nth-child(4){animation-delay:0.25s}
+.stat-card.purple:hover{border-color:rgba(168,139,250,0.4);box-shadow:0 16px 40px rgba(168,139,250,0.1)}
+.stat-card.blue:hover{border-color:rgba(56,151,255,0.4);box-shadow:0 16px 40px rgba(56,151,255,0.1)}
+.stat-card.green:hover{border-color:rgba(0,200,83,0.4);box-shadow:0 16px 40px rgba(0,200,83,0.1)}
+.stat-card.orange:hover{border-color:rgba(255,179,0,0.4);box-shadow:0 16px 40px rgba(255,179,0,0.1)}
+.stat-icon{font-size:20px;line-height:1}.stat-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3)}
+.stat-value{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
+.stat-card.purple .stat-value{color:#a78bfa}.stat-card.blue .stat-value{color:#3897ff}.stat-card.green .stat-value{color:#00c853}.stat-card.orange .stat-value{color:#ffb300}
+.stat-sub{font-size:11px;color:rgba(255,255,255,0.25)}
+.stat-skeleton{display:inline-block;width:70px;height:30px;background:rgba(255,255,255,0.06);border-radius:8px;animation:shimmer 1.5s ease-in-out infinite}
+@keyframes shimmer{0%,100%{opacity:0.4}50%{opacity:0.9}}
+
+.section-title{position:relative;z-index:1;max-width:960px;margin:32px auto 16px;font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.25);display:flex;align-items:center;gap:12px}
+.section-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+
+/* CHANNEL CARD */
+.channel-card{position:relative;z-index:1;max-width:960px;margin:0 auto 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:24px 28px;display:flex;align-items:center;gap:20px;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) 0.05s both;flex-wrap:wrap}
+.channel-avatar{width:64px;height:64px;border-radius:50%;background:rgba(168,139,250,0.15);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden;border:2px solid rgba(168,139,250,0.2)}
+.channel-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.channel-info{flex:1;min-width:200px}
+.channel-name{font-size:22px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#a78bfa 60%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.channel-desc{font-size:12px;color:rgba(255,255,255,0.3);margin-top:4px;line-height:1.5}
+.channel-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.tag{padding:3px 10px;background:rgba(168,139,250,0.08);border:1px solid rgba(168,139,250,0.2);border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.8px;color:rgba(168,139,250,0.7)}
+.live-badge-big{display:flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(255,40,40,0.12);border:1px solid rgba(255,40,40,0.35);border-radius:999px;font-size:11px;font-weight:800;color:rgba(255,80,80,0.9)}
+.offline-badge{display:flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:999px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.25)}
+.live-dot-anim{width:7px;height:7px;border-radius:50%;background:#ff4444;animation:livePulse 1.2s ease-in-out infinite}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+
+/* CHARTS */
+.chart-section{position:relative;z-index:1;max-width:960px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.chart-section{grid-template-columns:1fr}}
+.chart-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:22px 20px;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both}
+.chart-card:nth-child(1){animation-delay:0.15s}.chart-card:nth-child(2){animation-delay:0.25s}
+.chart-title{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:18px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:80px}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.bar{width:100%;border-radius:6px 6px 0 0;transition:all 0.5s cubic-bezier(0.34,1.4,0.64,1);cursor:default}
+.bar:hover{filter:brightness(1.4)}
+.bar-label{font-size:9px;color:rgba(255,255,255,0.2);white-space:nowrap}
+.no-data{font-size:12px;color:rgba(255,255,255,0.2);text-align:center;padding:24px 0;font-style:italic;width:100%}
+
+/* STREAMS LIST */
+.streams-list{position:relative;z-index:1;max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.stream-row{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:all 0.2s;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both}
+.stream-row:hover{background:rgba(255,255,255,0.04);border-color:rgba(168,139,250,0.25)}
+.stream-thumb{width:64px;height:36px;border-radius:8px;background:rgba(168,139,250,0.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden}
+.stream-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.stream-info{flex:1;min-width:0}
+.stream-title{font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stream-meta{font-size:11px;color:rgba(255,255,255,0.3);margin-top:3px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stream-game{color:rgba(168,139,250,0.7);font-weight:600}
+.stream-badges{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.sbadge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.badge-views{background:rgba(56,151,255,0.1);border:1px solid rgba(56,151,255,0.2);color:rgba(56,151,255,0.8)}
+.badge-dur{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35)}
+
+/* ERROR */
+.error-banner{position:relative;z-index:1;max-width:960px;margin:0 auto 20px;padding:14px 20px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.2);border-radius:12px;font-size:12px;color:rgba(255,100,100,0.8);display:none}
+.error-banner.show{display:block}
+
+/* SIGNATURE */
+.hub-signature{position:fixed;bottom:24px;left:28px;z-index:10}
+.sig-powered{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.sig-vyzion{font-size:20px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#3897ff 0%,#1db954 60%,#a78bfa 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sigGradient 4s ease-in-out infinite alternate}
+@keyframes sigGradient{0%{background-position:0 50%}100%{background-position:100% 50%}}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+</style>
+</head>
+<body>
+<div class="glow glow-purple"></div>
+<div class="glow glow-blue"></div>
+
+<div class="page-header">
+  <a href="/" class="back-btn">← Hub</a>
+  <div>
+    <div class="page-title">Stats Twitch</div>
+    <div class="page-sub">Toutes les stats de ta chaîne</div>
+  </div>
+  <div class="header-right">
+    <button class="refresh-btn" id="refresh-btn" onclick="loadAll()"><span class="ri">↻</span> Actualiser</button>
+    <div class="connect-badge" id="connect-badge" onclick="toggleConfig()">
+      <span class="connect-dot" id="connect-dot"></span>
+      <span id="connect-label">Configurer API</span>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG PANEL — smooth slide -->
+<div class="config-panel" id="config-panel">
+  <div class="config-title">🔑 Identifiants Twitch API</div>
+  <div class="config-grid">
+    <div class="config-field">
+      <label>Client ID</label>
+      <input type="text" id="cfg-client-id" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="config-field">
+      <label>Client Secret</label>
+      <input type="password" id="cfg-client-secret" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="config-field" style="grid-column:1/-1">
+      <label>Ton nom d'utilisateur Twitch</label>
+      <input type="text" id="cfg-username" placeholder="ex: drt_hbr">
+    </div>
+  </div>
+  <div class="config-actions">
+    <button class="btn-save" onclick="saveConfig()">💾 Sauvegarder &amp; Connecter</button>
+    <button class="btn-cancel" onclick="closeConfig()">Annuler</button>
+  </div>
+</div>
+
+<div class="error-banner" id="error-banner"></div>
+
+<div id="channel-section"></div>
+
+<div class="section-title">Statistiques clés</div>
+<div class="stats-grid" id="stats-grid">
+  <div class="stat-card purple"><div class="stat-icon">👥</div><div class="stat-label">Followers</div><div class="stat-value"><span class="stat-skeleton"></span></div></div>
+  <div class="stat-card blue"><div class="stat-icon">👁️</div><div class="stat-label">Total vues</div><div class="stat-value"><span class="stat-skeleton"></span></div></div>
+  <div class="stat-card green"><div class="stat-icon">🎮</div><div class="stat-label">Streams</div><div class="stat-value"><span class="stat-skeleton"></span></div></div>
+  <div class="stat-card orange"><div class="stat-icon">⭐</div><div class="stat-label">Avg viewers</div><div class="stat-value"><span class="stat-skeleton"></span></div></div>
+</div>
+
+<div class="section-title">Évolution (7 derniers streams)</div>
+<div class="chart-section">
+  <div class="chart-card"><div class="chart-title">👁 Viewers par stream</div><div class="bar-chart" id="bar-viewers"><div class="no-data">Chargement...</div></div></div>
+  <div class="chart-card"><div class="chart-title">⏱ Durée (minutes)</div><div class="bar-chart" id="bar-duration"><div class="no-data">Chargement...</div></div></div>
+</div>
+
+<div class="section-title">Derniers streams</div>
+<div class="streams-list" id="streams-list">
+  <div class="stream-row"><div class="no-data">Chargement...</div></div>
+</div>
+
+<div class="hub-signature"><div class="sig-powered">POWERED BY</div><div class="sig-vyzion">VYZION</div></div>
+
+<script>
+const KEY_CFG = 'twitch_cfg';
+function getCfg(){return JSON.parse(localStorage.getItem(KEY_CFG)||'null')}
+function setCfg(c){localStorage.setItem(KEY_CFG,JSON.stringify(c))}
+
+let tokenCache=null, tokenExpiry=0;
+let configOpen=false;
+
+// ─── TOGGLE CONFIG PANEL (CORRIGÉ) ───
+function toggleConfig(){
+  configOpen=!configOpen;
+  const panel=document.getElementById('config-panel');
+  if(configOpen){
+    const c=getCfg()||{};
+    document.getElementById('cfg-client-id').value=c.clientId||'';
+    document.getElementById('cfg-client-secret').value=c.clientSecret||'';
+    document.getElementById('cfg-username').value=c.username||'';
+    panel.classList.add('open');
+    setTimeout(()=>document.getElementById('cfg-client-id').focus(),350);
+  } else {
+    panel.classList.remove('open');
+  }
+}
+function closeConfig(){
+  configOpen=false;
+  document.getElementById('config-panel').classList.remove('open');
+}
+
+function saveConfig(){
+  const c={
+    clientId:document.getElementById('cfg-client-id').value.trim(),
+    clientSecret:document.getElementById('cfg-client-secret').value.trim(),
+    username:document.getElementById('cfg-username').value.trim()
+  };
+  if(!c.clientId||!c.clientSecret||!c.username){
+    showError('Remplis tous les champs avant de sauvegarder.');
+    return;
+  }
+  setCfg(c);
+  tokenCache=null;
+  closeConfig();
+  loadAll();
+}
+
+function showError(msg){
+  const b=document.getElementById('error-banner');
+  b.textContent='⚠ '+msg;
+  b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'),7000);
+}
+
+// ─── TOKEN OAUTH ───
+async function getToken(){
+  if(tokenCache&&Date.now()<tokenExpiry)return tokenCache;
+  const c=getCfg();if(!c)return null;
+  try{
+    const r=await fetch('https://id.twitch.tv/oauth2/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`client_id=${c.clientId}&client_secret=${c.clientSecret}&grant_type=client_credentials`
+    });
+    if(!r.ok){showError('Token Twitch refusé – vérifie ton Client ID et Client Secret.');return null;}
+    const d=await r.json();
+    tokenCache=d.access_token;
+    tokenExpiry=Date.now()+(d.expires_in-60)*1000;
+    return tokenCache;
+  }catch(e){showError('Impossible de contacter Twitch – vérifie ta connexion.');return null;}
+}
+
+async function twitchGet(url){
+  const c=getCfg();if(!c)return null;
+  const tok=await getToken();if(!tok)return null;
+  const r=await fetch(url,{headers:{'Client-ID':c.clientId,'Authorization':'Bearer '+tok}});
+  if(!r.ok){showError('Erreur API Twitch: '+r.status+' sur '+url.split('?')[0]);return null;}
+  return r.json();
+}
+
+function fmtNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'k';return String(n)}
+function fmtDate(s){return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
+function parseDur(s){const m=s.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/)||[];return(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)}
+function fmtDur(sec){const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return h?`${h}h${String(m).padStart(2,'0')}`:`${m}min`}
+
+// ─── CHANNEL ───
+async function loadChannel(userId){
+  const c=getCfg();
+  const [chanR,followR,userR,liveR]=await Promise.all([
+    twitchGet(`https://api.twitch.tv/helix/channels?broadcaster_id=${userId}`),
+    twitchGet(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${userId}&first=1`),
+    twitchGet(`https://api.twitch.tv/helix/users?id=${userId}`),
+    twitchGet(`https://api.twitch.tv/helix/streams?user_id=${userId}`)
+  ]);
+  if(!chanR||!chanR.data[0])return null;
+  const ch=chanR.data[0];
+  const followers=followR?.total??0;
+  const totalViews=userR?.data[0]?.view_count||0;
+  const avatar=userR?.data[0]?.profile_image_url||'';
+  const desc=userR?.data[0]?.description||'';
+  const isLive=liveR?.data?.length>0;
+  const liveViewers=isLive?liveR.data[0].viewer_count:0;
+  const liveGame=isLive?liveR.data[0].game_name:'';
+  const liveBadge=isLive
+    ? `<div class="live-badge-big"><span class="live-dot-anim"></span>LIVE · ${fmtNum(liveViewers)} viewers · ${liveGame}</div>`
+    : `<div class="offline-badge"><span style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);display:inline-block"></span>Hors ligne</div>`;
+  document.getElementById('channel-section').innerHTML=`
+    <div class="channel-card">
+      <div class="channel-avatar">${avatar?`<img src="${avatar}" alt="">`:'🎮'}</div>
+      <div class="channel-info">
+        <div class="channel-name">${ch.broadcaster_name}</div>
+        ${desc?`<div class="channel-desc">${desc.substring(0,120)}${desc.length>120?'...':''}</div>`:''}
+        <div class="channel-tags">${(ch.tags||[]).slice(0,5).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+      ${liveBadge}
+    </div>`;
+  return{followers,totalViews};
+}
+
+// ─── STATS ───
+function renderStats(followers,totalViews,streams){
+  const views=streams.map(s=>s.view_count);
+  const avg=views.length?Math.round(views.reduce((a,b)=>a+b,0)/views.length):0;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card purple"><div class="stat-icon">👥</div><div class="stat-label">Followers</div><div class="stat-value">${fmtNum(followers)}</div><div class="stat-sub">Abonnés à la chaîne</div></div>
+    <div class="stat-card blue"><div class="stat-icon">👁️</div><div class="stat-label">Total vues</div><div class="stat-value">${fmtNum(totalViews)}</div><div class="stat-sub">Vues cumulées</div></div>
+    <div class="stat-card green"><div class="stat-icon">🎮</div><div class="stat-label">Streams</div><div class="stat-value">${streams.length}</div><div class="stat-sub">VODs récentes</div></div>
+    <div class="stat-card orange"><div class="stat-icon">⭐</div><div class="stat-label">Avg viewers</div><div class="stat-value">${fmtNum(avg)}</div><div class="stat-sub">Moyenne récente</div></div>`;
+}
+
+// ─── CHARTS ───
+function renderCharts(streams){
+  const recent=[...streams].slice(0,7).reverse();
+  function bars(vals,color){
+    if(!vals.length)return '<div class="no-data">Pas de données</div>';
+    const max=Math.max(...vals,1);
+    return vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" style="height:${Math.max(6,Math.round(v/max*72))}px;background:${color};opacity:${0.45+0.55*v/max}" title="${v}"></div><div class="bar-label">${i+1}</div></div>`).join('');
+  }
+  document.getElementById('bar-viewers').innerHTML=bars(recent.map(s=>s.view_count),'#a78bfa');
+  document.getElementById('bar-duration').innerHTML=bars(recent.map(s=>Math.round(parseDur(s.duration)/60)),'#3897ff');
+}
+
+// ─── STREAMS LIST ───
+function renderStreams(streams){
+  if(!streams.length){document.getElementById('streams-list').innerHTML='<div class="stream-row"><div class="no-data">Aucun stream trouvé.</div></div>';return;}
+  document.getElementById('streams-list').innerHTML=streams.map((s,i)=>`
+    <div class="stream-row" style="animation-delay:${i*0.04}s">
+      <div class="stream-thumb">${s.thumbnail_url?`<img src="${s.thumbnail_url.replace('%{width}','128').replace('%{height}','72')}" alt="" loading="lazy">`:'📺'}</div>
+      <div class="stream-info">
+        <div class="stream-title">${s.title||'Sans titre'}</div>
+        <div class="stream-meta"><span class="stream-game">${s.game_name||'Inconnu'}</span><span>${fmtDate(s.created_at)}</span></div>
+      </div>
+      <div class="stream-badges">
+        <div class="sbadge badge-views">👁 ${fmtNum(s.view_count)}</div>
+        <div class="sbadge badge-dur">⏱ ${fmtDur(parseDur(s.duration))}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── PLACEHOLDER (sans config) ───
+function renderEmpty(){
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card purple"><div class="stat-icon">👥</div><div class="stat-label">Followers</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>
+    <div class="stat-card blue"><div class="stat-icon">👁️</div><div class="stat-label">Total vues</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>
+    <div class="stat-card green"><div class="stat-icon">🎮</div><div class="stat-label">Streams</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>
+    <div class="stat-card orange"><div class="stat-icon">⭐</div><div class="stat-label">Avg viewers</div><div class="stat-value" style="font-size:20px;color:rgba(255,255,255,0.15)">—</div></div>`;
+  document.getElementById('bar-viewers').innerHTML='<div class="no-data">Configure l'API pour voir les données</div>';
+  document.getElementById('bar-duration').innerHTML='<div class="no-data">Configure l'API pour voir les données</div>';
+  document.getElementById('streams-list').innerHTML='<div class="stream-row"><div class="no-data">Clique sur "Configurer API" en haut à droite pour commencer.</div></div>';
+}
+
+// ─── LOAD ALL ───
+async function loadAll(){
+  const c=getCfg();
+  if(!c){renderEmpty();return;}
+  const btn=document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  document.getElementById('error-banner').classList.remove('show');
+  try{
+    const users=await twitchGet(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(c.username)}`);
+    if(!users||!users.data[0]){showError("Nom d'utilisateur Twitch introuvable.");btn.classList.remove('spinning');return;}
+    const uid=users.data[0].id;
+    const [channelData,vidsData]=await Promise.all([
+      loadChannel(uid),
+      twitchGet(`https://api.twitch.tv/helix/videos?user_id=${uid}&first=20&type=archive`)
+    ]);
+    const streams=vidsData?.data||[];
+    if(channelData)renderStats(channelData.followers,channelData.totalViews,streams);
+    renderCharts(streams);
+    renderStreams(streams);
+    const badge=document.getElementById('connect-badge');
+    badge.innerHTML=`<span class="connect-dot" style="background:#00c853;animation:dotGreen 1.6s ease-in-out infinite"></span><span>Connecté · ${c.username}</span>`;
+    badge.classList.add('connected');
+  }catch(e){showError('Erreur inattendue: '+e.message);}
+  btn.classList.remove('spinning');
+}
+
+// ─── INIT ───
+window.addEventListener('DOMContentLoaded',()=>{
+  const c=getCfg();
+  if(c){
+    loadAll();
+  } else {
+    renderEmpty();
+    // Ouvre directement le panel si pas de config
+    setTimeout(()=>toggleConfig(),400);
+  }
+});
+</script>
+</body>
+</html>

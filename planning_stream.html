@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyzion — Planning Stream</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-height:100vh;padding:32px 20px 80px;overflow-x:hidden;position:relative}
+.glow{position:fixed;border-radius:50%;filter:blur(120px);z-index:0;animation:glowDrift 8s ease-in-out infinite alternate;pointer-events:none}
+.glow-green{width:380px;height:380px;background:rgba(29,185,84,0.13);top:10%;right:15%;animation-delay:0s}
+.glow-blue{width:320px;height:320px;background:rgba(0,102,204,0.14);bottom:15%;left:15%;animation-delay:-4s}
+@keyframes glowDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,-20px) scale(1.1)}}
+
+/* HEADER */
+.page-header{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:860px;margin:0 auto 40px;flex-wrap:wrap;gap:16px}
+.back-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:rgba(255,255,255,0.5);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.back-btn:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8)}
+.page-title{font-size:28px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#1db954 50%,#3897ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-sub{font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;margin-top:4px}
+.header-actions{display:flex;gap:10px}
+.btn-add{display:flex;align-items:center;gap:6px;padding:10px 20px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.35);border-radius:12px;color:rgba(29,185,84,0.9);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-add:hover{background:rgba(29,185,84,0.22);border-color:rgba(29,185,84,0.6)}
+.public-link-btn{display:flex;align-items:center;gap:6px;padding:10px 20px;background:rgba(56,151,255,0.08);border:1px solid rgba(56,151,255,0.25);border-radius:12px;color:rgba(56,151,255,0.7);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.public-link-btn:hover{background:rgba(56,151,255,0.15);color:rgba(56,151,255,0.9)}
+
+/* CALENDRIER */
+.calendar-wrap{position:relative;z-index:1;max-width:860px;margin:0 auto 32px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-month{font-size:18px;font-weight:800;color:rgba(255,255,255,0.85)}
+.cal-nav{display:flex;gap:8px}
+.cal-nav-btn{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.5);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-family:'Space Grotesk',sans-serif}
+.cal-nav-btn:hover{background:rgba(29,185,84,0.1);border-color:rgba(29,185,84,0.3);color:rgba(29,185,84,0.8)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-day-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;padding:8px 0}
+.cal-cell{min-height:52px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:8px;cursor:pointer;transition:all 0.2s;position:relative}
+.cal-cell:hover{background:rgba(29,185,84,0.07);border-color:rgba(29,185,84,0.25)}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
+.cal-cell.today{border-color:rgba(29,185,84,0.4);background:rgba(29,185,84,0.06)}
+.cal-cell.has-stream{border-color:rgba(56,151,255,0.4);background:rgba(56,151,255,0.06)}
+.cal-cell.has-stream:hover{background:rgba(56,151,255,0.12);border-color:rgba(56,151,255,0.6)}
+.cal-cell.past{opacity:0.45}
+.cal-date-num{font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);line-height:1}
+.cal-cell.today .cal-date-num{color:#1db954;font-weight:800}
+.cal-dot{width:6px;height:6px;border-radius:50%;background:#3897ff;margin-top:4px;box-shadow:0 0 6px rgba(56,151,255,0.6)}
+.cal-event-preview{font-size:9px;font-weight:700;color:rgba(56,151,255,0.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+
+/* LISTE STREAMS */
+.section-title{position:relative;z-index:1;max-width:860px;margin:0 auto 16px;font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.25);display:flex;align-items:center;gap:12px}
+.section-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+
+.streams-list{position:relative;z-index:1;max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.stream-item{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px 22px;display:flex;align-items:center;gap:16px;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both;position:relative;overflow:hidden}
+.stream-item::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;border-radius:3px 0 0 3px}
+.stream-item.upcoming::before{background:linear-gradient(to bottom,#1db954,#3897ff)}
+.stream-item.past::before{background:rgba(255,255,255,0.1)}
+.stream-date-block{display:flex;flex-direction:column;align-items:center;min-width:52px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 8px;gap:2px}
+.stream-day{font-size:22px;font-weight:800;color:#fff;line-height:1}
+.stream-month{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35)}
+.stream-info{flex:1;min-width:0}
+.stream-title-text{font-size:15px;font-weight:700;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stream-meta{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+.stream-time{font-size:12px;color:rgba(29,185,84,0.8);font-weight:600}
+.stream-game-tag{font-size:11px;font-weight:600;color:rgba(255,255,255,0.35)}
+.stream-desc{font-size:11px;color:rgba(255,255,255,0.25);margin-top:3px}
+.stream-actions{display:flex;gap:8px;flex-shrink:0}
+.btn-edit{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.4);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.btn-edit:hover{background:rgba(255,179,0,0.1);border-color:rgba(255,179,0,0.3);color:#ffb300}
+.btn-del{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.btn-del:hover{background:rgba(255,60,60,0.1);border-color:rgba(255,60,60,0.3);color:#ff5555}
+.past .stream-title-text{color:rgba(255,255,255,0.4)}
+.past .stream-day{color:rgba(255,255,255,0.35)}
+.past-label{font-size:10px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);border-radius:999px;padding:2px 8px}
+.empty-state{text-align:center;padding:40px;color:rgba(255,255,255,0.2);font-size:14px}
+.empty-state span{font-size:32px;display:block;margin-bottom:12px;opacity:0.5}
+
+/* MODALE */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-box{background:#0d0d14;border:1px solid rgba(29,185,84,0.25);border-radius:24px;padding:32px;width:100%;max-width:500px;transform:translateY(24px) scale(0.97);transition:transform 0.35s cubic-bezier(0.34,1.4,0.64,1);box-shadow:0 32px 80px rgba(0,0,0,0.8)}
+.modal-overlay.show .modal-box{transform:translateY(0) scale(1)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.modal-title{font-size:18px;font-weight:800;color:rgba(29,185,84,0.9)}
+.modal-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.modal-close:hover{background:rgba(255,60,60,0.15);border-color:rgba(255,60,60,0.4);color:#ff5555}
+.field{margin-bottom:16px}
+.field label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:6px}
+.field input,.field textarea,.field select{width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;resize:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:rgba(29,185,84,0.5)}
+.field input::placeholder,.field textarea::placeholder{color:rgba(255,255,255,0.2)}
+.field select option{background:#0d0d14}
+.fields-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:10px;margin-top:24px}
+.btn-confirm{flex:1;padding:12px;background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.4);border-radius:12px;color:rgba(29,185,84,0.9);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-confirm:hover{background:rgba(29,185,84,0.25)}
+.btn-modal-cancel{padding:12px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.4);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-modal-cancel:hover{background:rgba(255,255,255,0.08)}
+
+/* SIGNATURE */
+.hub-signature{position:fixed;bottom:24px;left:28px;z-index:10}
+.sig-powered{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.sig-vyzion{font-size:20px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#3897ff 0%,#1db954 60%,#a78bfa 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sigGradient 4s ease-in-out infinite alternate}
+@keyframes sigGradient{0%{background-position:0 50%}100%{background-position:100% 50%}}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+</style>
+</head>
+<body>
+
+<div class="glow glow-green"></div>
+<div class="glow glow-blue"></div>
+
+<!-- HEADER -->
+<div class="page-header">
+  <a href="/" class="back-btn">← Hub</a>
+  <div>
+    <div class="page-title">Planning Stream</div>
+    <div class="page-sub">Gère et affiche tes prochains streams</div>
+  </div>
+  <div class="header-actions">
+    <a href="planning-public.html" class="public-link-btn" target="_blank">🔗 Vue publique</a>
+    <button class="btn-add" onclick="openModal()">+ Ajouter</button>
+  </div>
+</div>
+
+<!-- CALENDRIER -->
+<div class="calendar-wrap">
+  <div class="cal-header">
+    <div class="cal-month" id="cal-month-label">Juin 2026</div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+      <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<!-- STREAMS À VENIR -->
+<div class="section-title">À venir</div>
+<div class="streams-list" id="upcoming-list"></div>
+
+<!-- STREAMS PASSÉS -->
+<div class="section-title" style="margin-top:28px">Passés</div>
+<div class="streams-list" id="past-list"></div>
+
+<!-- MODALE AJOUT/EDIT -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">📅 Nouveau stream</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field"><label>Titre du stream</label><input type="text" id="f-title" placeholder="ex: Session GTA RP – Nuit blanche"></div>
+    <div class="fields-row">
+      <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+      <div class="field"><label>Heure</label><input type="time" id="f-time" value="21:00"></div>
+    </div>
+    <div class="fields-row">
+      <div class="field"><label>Jeu / Catégorie</label><input type="text" id="f-game" placeholder="ex: GTA V"></div>
+      <div class="field"><label>Durée estimée</label>
+        <select id="f-duration">
+          <option value="">Non définie</option>
+          <option value="1h">~1h</option>
+          <option value="2h">~2h</option>
+          <option value="3h">~3h</option>
+          <option value="4h+">4h+</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Description (optionnel)</label><textarea id="f-desc" rows="2" placeholder="Infos, contexte, liens..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="saveStream()">💾 Sauvegarder</button>
+      <button class="btn-modal-cancel" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNATURE -->
+<div class="hub-signature">
+  <div class="sig-powered">POWERED BY</div>
+  <div class="sig-vyzion">VYZION</div>
+</div>
+
+<script>
+// ─── STORAGE ───
+const KEY='vyzion_schedule';
+function getStreams(){return JSON.parse(localStorage.getItem(KEY)||'[]')}
+function setStreams(d){localStorage.setItem(KEY,JSON.stringify(d))}
+
+// ─── CALENDRIER ───
+const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
+
+function changeMonth(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+
+function renderCalendar(){
+  document.getElementById('cal-month-label').textContent=`${MONTHS[calMonth]} ${calYear}`;
+  const streams=getStreams();
+  const streamDates={};
+  streams.forEach(s=>{const d=s.date;if(!streamDates[d])streamDates[d]=[];streamDates[d].push(s);});
+  const today=new Date();
+  const firstDay=new Date(calYear,calMonth,1);
+  let startDow=(firstDay.getDay()+6)%7; // lundi=0
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  let html=DAYS.map(d=>`<div class="cal-day-label">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++)html+=`<div class="cal-cell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
+    const isPast=new Date(calYear,calMonth,d)<new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const hasStream=streamDates[dateStr];
+    let cls='cal-cell';
+    if(isToday)cls+=' today';
+    if(hasStream)cls+=' has-stream';
+    if(isPast&&!isToday)cls+=' past';
+    const preview=hasStream?`<div class="cal-dot"></div><div class="cal-event-preview">${hasStream[0].title||'Stream'}</div>`:'';
+    html+=`<div class="${cls}" onclick="onCalClick('${dateStr}')"><div class="cal-date-num">${d}</div>${preview}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+function onCalClick(dateStr){openModal(null,dateStr);}
+
+// ─── RENDU LISTE ───
+function render(){
+  renderCalendar();
+  const streams=getStreams();
+  const now=new Date();
+  const upcoming=streams.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))>=now).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  const past=streams.filter(s=>new Date(s.date+'T'+(s.time||'00:00'))<now).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('upcoming-list').innerHTML=upcoming.length?upcoming.map((s,i)=>streamCard(s,i,'upcoming')).join(''):`<div class="empty-state"><span>📅</span>Aucun stream planifié.<br>Clique sur "+ Ajouter" pour commencer !</div>`;
+  document.getElementById('past-list').innerHTML=past.length?past.slice(0,5).map((s,i)=>streamCard(s,i,'past')).join(''):`<div class="empty-state" style="padding:20px"><span style="font-size:20px">🕐</span>Pas encore de streams passés.</div>`;
+}
+
+function streamCard(s,i,type){
+  const dt=new Date(s.date+'T12:00');
+  const day=dt.getDate();
+  const month=MONTHS[dt.getMonth()].substring(0,3).toUpperCase();
+  const isPast=type==='past';
+  return `<div class="stream-item ${type}" style="animation-delay:${i*0.05}s">
+    <div class="stream-date-block"><div class="stream-day">${day}</div><div class="stream-month">${month}</div></div>
+    <div class="stream-info">
+      <div class="stream-title-text">${s.title||'Sans titre'}</div>
+      <div class="stream-meta">
+        ${s.time?`<span class="stream-time">🕐 ${s.time}</span>`:''}
+        ${s.game?`<span class="stream-game-tag">🎮 ${s.game}</span>`:''}
+        ${s.duration?`<span class="stream-game-tag">⏱ ${s.duration}</span>`:''}
+        ${isPast?`<span class="past-label">Terminé</span>`:''}
+      </div>
+      ${s.desc?`<div class="stream-desc">${s.desc.substring(0,80)}${s.desc.length>80?'...':''}</div>`:''}
+    </div>
+    <div class="stream-actions">
+      <button class="btn-edit" onclick="openModal('${s.id}')" title="Modifier">✏️</button>
+      <button class="btn-del" onclick="deleteStream('${s.id}')" title="Supprimer">🗑</button>
+    </div>
+  </div>`;
+}
+
+// ─── MODAL ───
+let editId=null;
+function openModal(id,prefillDate){
+  editId=id||null;
+  const s=id?getStreams().find(x=>x.id===id):null;
+  document.getElementById('modal-title').textContent=id?'✏️ Modifier le stream':'📅 Nouveau stream';
+  document.getElementById('f-title').value=s?.title||'';
+  document.getElementById('f-date').value=s?.date||(prefillDate||'');
+  document.getElementById('f-time').value=s?.time||'21:00';
+  document.getElementById('f-game').value=s?.game||'';
+  document.getElementById('f-duration').value=s?.duration||'';
+  document.getElementById('f-desc').value=s?.desc||'';
+  document.getElementById('modal-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('f-title').focus(),100);
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');editId=null;}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function saveStream(){
+  const title=document.getElementById('f-title').value.trim();
+  const date=document.getElementById('f-date').value;
+  if(!title||!date){document.getElementById('f-title').style.borderColor='rgba(255,60,60,0.5)';setTimeout(()=>document.getElementById('f-title').style.borderColor='',1500);return;}
+  const streams=getStreams();
+  const newS={id:editId||(Date.now().toString(36)),title,date,time:document.getElementById('f-time').value,game:document.getElementById('f-game').value.trim(),duration:document.getElementById('f-duration').value,desc:document.getElementById('f-desc').value.trim()};
+  if(editId){const idx=streams.findIndex(s=>s.id===editId);if(idx>-1)streams[idx]=newS;}else{streams.push(newS);}
+  setStreams(streams);closeModal();render();
+}
+function deleteStream(id){if(!confirm('Supprimer ce stream ?'))return;setStreams(getStreams().filter(s=>s.id!==id));render();}
+
+// ─── INIT ───
+render();
+</script>
+</body>
+</html>

@@ -381,6 +381,13 @@ async function loadAll(){
     const users=await twitchGet(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(c.username)}`);
     if(!users||!users.data[0]){showError("Nom d'utilisateur Twitch introuvable.");btn.classList.remove('spinning');return;}
     const uid=users.data[0].id;
+    
+    fetch('/api/twitch-config', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ clientId: c.clientId, clientSecret: c.clientSecret, userId: uid, username: c.username })
+}).catch(() => {});
+    
     const [channelData,vidsData]=await Promise.all([
       loadChannel(uid),
       twitchGet(`https://api.twitch.tv/helix/videos?user_id=${uid}&first=20&type=archive`)

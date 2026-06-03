@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyzion — Rapport Post-Stream</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d14;color:#fff;font-family:'Space Grotesk',sans-serif;min-height:100vh;padding:32px 20px 80px;overflow-x:hidden;position:relative}
+.glow{position:fixed;border-radius:50%;filter:blur(120px);z-index:0;animation:glowDrift 8s ease-in-out infinite alternate;pointer-events:none}
+.glow-green{width:380px;height:380px;background:rgba(29,185,84,0.12);top:5%;right:10%}
+.glow-blue{width:340px;height:340px;background:rgba(0,102,204,0.13);bottom:10%;left:10%;animation-delay:-5s}
+@keyframes glowDrift{from{transform:translate(0,0)}to{transform:translate(28px,-20px) scale(1.06)}}
+
+/* HEADER */
+.page-header{position:relative;z-index:1;max-width:900px;margin:0 auto 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.back-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:rgba(255,255,255,0.5);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.back-btn:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8)}
+.page-title{font-size:28px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#1db954 50%,#3897ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-sub{font-size:12px;color:rgba(255,255,255,0.3);margin-top:4px}
+.header-actions{display:flex;gap:10px}
+.btn-clear{padding:9px 18px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.2);border-radius:12px;color:rgba(255,80,80,0.7);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-clear:hover{background:rgba(255,60,60,0.15);color:rgba(255,80,80,0.9)}
+.btn-test{padding:9px 18px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.25);border-radius:12px;color:rgba(29,185,84,0.8);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-test:hover{background:rgba(29,185,84,0.18)}
+
+/* EMPTY */
+.empty{position:relative;z-index:1;max-width:900px;margin:40px auto;text-align:center;padding:60px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:24px}
+.empty-emoji{font-size:48px;display:block;margin-bottom:16px;opacity:0.4}
+.empty-title{font-size:16px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:8px}
+.empty-sub{font-size:13px;color:rgba(255,255,255,0.2);line-height:1.6}
+
+/* RAPPORT CARD */
+.rapport-wrap{position:relative;z-index:1;max-width:900px;margin:0 auto 28px;animation:cardIn 0.5s cubic-bezier(0.34,1.4,0.64,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.rapport-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:24px;overflow:hidden;transition:border-color 0.2s}
+.rapport-card:hover{border-color:rgba(29,185,84,0.2)}
+
+/* TOP BAR */
+.rcard-top{background:linear-gradient(135deg,rgba(29,185,84,0.07) 0%,rgba(56,151,255,0.05) 100%);border-bottom:1px solid rgba(255,255,255,0.05);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:relative}
+.rcard-top::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(29,185,84,0.35),rgba(56,151,255,0.25),transparent)}
+.rcard-title{font-size:18px;font-weight:800;color:rgba(255,255,255,0.9)}
+.rcard-date{font-size:12px;color:rgba(255,255,255,0.3);font-weight:600}
+.rcard-game-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(56,151,255,0.1);border:1px solid rgba(56,151,255,0.2);border-radius:999px;font-size:11px;font-weight:700;color:rgba(56,151,255,0.8)}
+.duration-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:999px;font-size:11px;font-weight:700;color:rgba(255,179,0,0.8)}
+
+/* STATS GRID */
+.rcard-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05)}
+@media(max-width:600px){.rcard-stats{grid-template-columns:repeat(2,1fr)}}
+.rstat{background:#0d0d14;padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.rstat-value{font-size:28px;font-weight:800;line-height:1}
+.rstat-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3)}
+.rstat-delta{font-size:11px;font-weight:700;margin-top:2px}
+.rstat-delta.up{color:#1db954}.rstat-delta.down{color:#ff5555}.rstat-delta.neutral{color:rgba(255,255,255,0.25)}
+.rstat.viewers .rstat-value{color:rgba(56,151,255,0.9)}
+.rstat.followers .rstat-value{color:rgba(29,185,84,0.9)}
+.rstat.peak .rstat-value{color:rgba(255,179,0,0.9)}
+.rstat.messages .rstat-value{color:rgba(145,70,255,0.9)}
+
+/* BOTTOM */
+.rcard-bottom{padding:20px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.top-chatters{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.top-chatters-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.25)}
+.chatter-chip{padding:4px 10px;background:rgba(145,70,255,0.08);border:1px solid rgba(145,70,255,0.2);border-radius:999px;font-size:11px;font-weight:700;color:rgba(145,70,255,0.7)}
+.delete-btn{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.delete-btn:hover{background:rgba(255,60,60,0.1);border-color:rgba(255,60,60,0.3);color:#ff5555}
+
+/* SECTION LABEL */
+.section-label{position:relative;z-index:1;max-width:900px;margin:0 auto 20px;font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2);display:flex;align-items:center;gap:12px}
+.section-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.35);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;color:rgba(29,185,84,0.9);z-index:999;opacity:0;transition:all 0.4s cubic-bezier(0.34,1.4,0.64,1);white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.hub-sig{position:fixed;bottom:24px;left:28px;z-index:10}
+.sig-p{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.sig-v{font-size:20px;font-weight:800;background:linear-gradient(135deg,#3897ff,#1db954,#a78bfa);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sg 4s ease-in-out infinite alternate}
+@keyframes sg{0%{background-position:0 50%}100%{background-position:100% 50%}}
+</style>
+</head>
+<body>
+<div class="glow glow-green"></div>
+<div class="glow glow-blue"></div>
+
+<div class="page-header">
+  <a href="/" class="back-btn">← Hub</a>
+  <div><div class="page-title">Rapports Post-Stream</div><div class="page-sub">Historique de tes streams</div></div>
+  <div class="header-actions">
+    <button class="btn-test" onclick="genTestRapport()">🧪 Tester</button>
+    <button class="btn-clear" onclick="clearAll()">🗑 Tout supprimer</button>
+  </div>
+</div>
+
+<div id="main-content"></div>
+
+<div class="toast" id="toast"></div>
+<div class="hub-sig"><div class="sig-p">POWERED BY</div><div class="sig-v">VYZION</div></div>
+
+<script>
+const API = 'https://vyz.drt-hbr.sbs';
+const MONTHS_SHORT = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
+
+function showToast(msg, color='green') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color === 'red' ? 'rgba(255,60,60,0.15)' : 'rgba(29,185,84,0.15)';
+  t.style.borderColor = color === 'red' ? 'rgba(255,60,60,0.35)' : 'rgba(29,185,84,0.35)';
+  t.style.color = color === 'red' ? 'rgba(255,80,80,0.9)' : 'rgba(29,185,84,0.9)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function formatDuration(ms) {
+  if (!ms) return '—';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  return h > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${m}min`;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()} — ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function deltaHtml(val, prev, suffix='') {
+  if (prev === undefined || prev === null) return `<div class="rstat-delta neutral">—</div>`;
+  const diff = val - prev;
+  if (diff > 0) return `<div class="rstat-delta up">▲ +${diff}${suffix} vs précédent</div>`;
+  if (diff < 0) return `<div class="rstat-delta down">▼ ${diff}${suffix} vs précédent</div>`;
+  return `<div class="rstat-delta neutral">= identique</div>`;
+}
+
+function rapportCard(r, prevR, idx) {
+  const chatters = (r.topChatters || []).map(c => `<span class="chatter-chip">${c}</span>`).join('');
+  return `
+  <div class="rapport-wrap" style="animation-delay:${idx * 0.07}s">
+    <div class="rapport-card">
+      <div class="rcard-top">
+        <div>
+          <div class="rcard-title">${r.title || 'Stream sans titre'}</div>
+          <div class="rcard-date">${formatDate(r.startedAt)}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${r.gameName ? `<div class="rcard-game-badge">🎮 ${r.gameName}</div>` : ''}
+          <div class="duration-badge">⏱ ${formatDuration(r.durationMs)}</div>
+        </div>
+      </div>
+      <div class="rcard-stats">
+        <div class="rstat viewers">
+          <div class="rstat-value">${r.avgViewers ?? '—'}</div>
+          <div class="rstat-label">Viewers moyens</div>
+          ${deltaHtml(r.avgViewers, prevR?.avgViewers)}
+        </div>
+        <div class="rstat peak">
+          <div class="rstat-value">${r.peakViewers ?? '—'}</div>
+          <div class="rstat-label">Peak viewers</div>
+          ${deltaHtml(r.peakViewers, prevR?.peakViewers)}
+        </div>
+        <div class="rstat followers">
+          <div class="rstat-value">+${r.newFollowers ?? 0}</div>
+          <div class="rstat-label">Nouveaux follows</div>
+          ${deltaHtml(r.newFollowers, prevR?.newFollowers)}
+        </div>
+        <div class="rstat messages">
+          <div class="rstat-value">${r.chatMessages ?? '—'}</div>
+          <div class="rstat-label">Messages chat</div>
+          ${deltaHtml(r.chatMessages, prevR?.chatMessages)}
+        </div>
+      </div>
+      ${chatters || r.notes ? `
+      <div class="rcard-bottom">
+        ${chatters ? `<div class="top-chatters"><span class="top-chatters-label">Top chatters</span>${chatters}</div>` : '<div></div>'}
+        <button class="delete-btn" onclick="deleteRapport('${r.id}')" title="Supprimer">🗑</button>
+      </div>` : `<div style="padding:14px 28px;display:flex;justify-content:flex-end"><button class="delete-btn" onclick="deleteRapport('${r.id}')" title="Supprimer">🗑</button></div>`}
+    </div>
+  </div>`;
+}
+
+async function loadRapports() {
+  try {
+    const r = await fetch(API + '/api/rapports');
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    render(data);
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div class="empty"><span class="empty-emoji">⚠️</span><div class="empty-title">Impossible de charger</div><div class="empty-sub">Serveur inaccessible.</div></div>`;
+  }
+}
+
+function render(rapports) {
+  const el = document.getElementById('main-content');
+  if (!rapports.length) {
+    el.innerHTML = `<div class="empty"><span class="empty-emoji">📊</span><div class="empty-title">Aucun rapport pour l'instant</div><div class="empty-sub">Les rapports sont générés automatiquement<br>à la fin de chaque stream.<br><br>Clique sur <strong>🧪 Tester</strong> pour voir un aperçu.</div></div>`;
+    return;
+  }
+  const sorted = [...rapports].sort((a,b) => new Date(b.startedAt) - new Date(a.startedAt));
+  el.innerHTML = `<div class="section-label" style="position:relative;z-index:1;max-width:900px;margin:0 auto 20px">${sorted.length} rapport${sorted.length > 1 ? 's' : ''}</div>` +
+    sorted.map((r, i) => rapportCard(r, sorted[i+1], i)).join('');
+}
+
+async function deleteRapport(id) {
+  if (!confirm('Supprimer ce rapport ?')) return;
+  try {
+    await fetch(API + '/api/rapports/' + id, { method: 'DELETE' });
+    showToast('Rapport supprimé');
+    loadRapports();
+  } catch(e) { showToast('Erreur', 'red'); }
+}
+
+async function clearAll() {
+  if (!confirm('Supprimer TOUS les rapports ?')) return;
+  try {
+    await fetch(API + '/api/rapports', { method: 'DELETE' });
+    showToast('Tous les rapports supprimés');
+    loadRapports();
+  } catch(e) { showToast('Erreur', 'red'); }
+}
+
+async function genTestRapport() {
+  try {
+    const r = await fetch(API + '/api/rapports/test', { method: 'POST' });
+    if (!r.ok) throw new Error();
+    showToast('Rapport de test généré !');
+    loadRapports();
+  } catch(e) { showToast('Erreur serveur', 'red'); }
+}
+
+loadRapports();
+setInterval(loadRapports, 60000);
+</script>
+</body>
+</html>

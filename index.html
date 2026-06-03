@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Central HUB</title>
+    <title>Mon Hub de Contrôle Stream</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1220,7 +1220,15 @@
             color: rgba(255,255,255,0.2);
             font-style: italic;
         }
-    </style>
+    
+        /* ── FOLDER STREAM (Stats + Planning) ── */
+        .card-folder.stream { animation-delay: 0.35s; }
+        .card-folder.stream:hover { border-color: rgba(29,185,84,0.4); box-shadow: 0 16px 48px rgba(29,185,84,0.08); }
+        .card-folder.stream .folder-tab { background: rgba(29,185,84,0.2); border-color: rgba(29,185,84,0.3); }
+        .card-folder.stream:hover .folder-tab { width: 90px; background: rgba(29,185,84,0.4); }
+        .card-folder.stream .folder-half:hover { background: rgba(29,185,84,0.08); }
+        .card-folder.stream .folder-half:first-child:after { background: linear-gradient(to bottom, transparent, rgba(29,185,84,0.3), transparent); }
+</style>
 </head>
 <body>
 
@@ -1306,7 +1314,33 @@
                 </div>
             </div>
 
-        </div>
+        
+            <!-- Carte Stream (Stats + Planning) -->
+            <div class="card-folder stream" id="streamFolder" style="grid-column: span 2;">
+                <div class="folder-tab"></div>
+
+                <!-- Vue repos -->
+                <div class="folder-default">
+                    <div class="icon" style="font-size:36px;margin-bottom:12px;transition:transform 0.3s">🎮</div>
+                    <div class="card-title" style="font-size:18px;font-weight:700;color:#1db954;margin-bottom:6px">Stream</div>
+                    <div class="card-desc" style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5">Stats & Planning — Survol ou tap pour ouvrir</div>
+                </div>
+
+                <!-- Vue split -->
+                <div class="folder-split">
+                    <a href="/stats" class="folder-half">
+                        <div class="half-icon">📊</div>
+                        <div class="half-label">Stats</div>
+                        <div class="half-sub">Twitch Analytics</div>
+                    </a>
+                    <a href="/planning" class="folder-half">
+                        <div class="half-icon">📅</div>
+                        <div class="half-label">Planning</div>
+                        <div class="half-sub" id="nsm-sub">Prochains streams</div>
+                    </a>
+                </div>
+            </div>
+</div>
 
 
         <!-- Carte Utilitaires / Config (folder pleine largeur) -->
@@ -1841,7 +1875,7 @@
                 }
                 if (grace <= 0) {
                     clearInterval(graceInterval);
-                    window.location.href = 'https://vyz.drt-hbr.sbs/off';
+                    lockHub();
                 }
             }, 1000);
         }

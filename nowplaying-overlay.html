@@ -15,7 +15,7 @@ body { background:transparent; overflow:hidden; font-family:'Inter',sans-serif; 
   backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
   border:1px solid rgba(255,255,255,0.07);
   border-radius:18px; padding:16px 18px 14px;
-  display:flex; flex-direction:column; gap:12px;
+  display:flex; flex-direction:column; gap:10px;
   transform:translateY(calc(100% + 40px)); opacity:0;
   will-change:transform,opacity;
   transition:
@@ -76,11 +76,11 @@ body { background:transparent; overflow:hidden; font-family:'Inter',sans-serif; 
 .sp-badge span { font-size:11px; font-weight:600; color:#fff; letter-spacing:0.03em; }
 
 .viz-wrap {
-  position:relative; height:46px; width:100%; overflow:hidden;
+  position:relative; height:26px; width:100%; overflow:hidden;
   transition:max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease;
-  max-height:46px; opacity:1;
+  max-height:26px; opacity:1;
 }
-#viz { width:100%; height:46px; display:block; }
+#viz { width:100%; height:26px; display:block; }
 
 #card.paused .art-img.active { filter:brightness(0.65) saturate(0.5); }
 #card.paused .track-title  { opacity:0.5; }
@@ -201,7 +201,6 @@ let isPlaying = false;
 let progress  = 0;
 let duration  = 1;
 let progRef   = 0;
-let hiddenByPause = false;
 const BARS = 64;
 let bH = new Float32Array(BARS);
 let tH = new Float32Array(BARS);
@@ -209,20 +208,15 @@ let nCur = new Float32Array(BARS).fill(0.5);
 let nTgt = new Float32Array(BARS).fill(0.5);
 let noiseClock = 0;
 let lastTs = 0;
-let pauseTimer1 = null, pauseTimer2 = null;
+let pauseTimer = null;
 
-function clearPauseTimers() { clearTimeout(pauseTimer1); clearTimeout(pauseTimer2); pauseTimer1 = pauseTimer2 = null; }
-function startPauseTimers() {
-  clearPauseTimers();
-  pauseTimer1 = setTimeout(() => card.classList.add('compact'), 5000);
-  pauseTimer2 = setTimeout(() => {
-    card.classList.remove('show', 'paused', 'compact');
-    hiddenByPause = true;
-  }, 10000);
+function clearPauseTimer() { clearTimeout(pauseTimer); pauseTimer = null; }
+function startPauseTimer() {
+  clearPauseTimer();
+  pauseTimer = setTimeout(() => card.classList.add('compact'), 5000);
 }
 function resumeFromPause() {
-  clearPauseTimers();
-  hiddenByPause = false;
+  clearPauseTimer();
   card.classList.remove('compact', 'paused');
   if (!card.classList.contains('show')) setTimeout(() => card.classList.add('show'), 50);
 }
@@ -275,32 +269,43 @@ function draw(ts) {
     const step = W / (BARS - 1);
     ctx.beginPath(); ctx.moveTo(0, H / 2);
     for (let i = 0; i < BARS; i++) {
-      const px = i * step, py = H / 2 - bH[i] * H * 0.42;
+      const px = i * step, py = H / 2 - bH[i] * H * 0.36;
       if (i === 0) { ctx.lineTo(px, py); continue; }
-      ctx.quadraticCurveTo((i - 0.5) * step, H / 2 - bH[i - 1] * H * 0.42, px, py);
+      ctx.quadraticCurveTo((i - 0.5) * step, H / 2 - bH[i - 1] * H * 0.36, px, py);
     }
     ctx.lineTo(W, H / 2);
     for (let i = BARS - 1; i >= 0; i--) {
-      const px = i * step, py = H / 2 + bH[i] * H * 0.42;
+      const px = i * step, py = H / 2 + bH[i] * H * 0.36;
       if (i === BARS - 1) { ctx.lineTo(px, py); continue; }
-      ctx.quadraticCurveTo((i + 0.5) * step, H / 2 + bH[i + 1] * H * 0.42, px, py);
+      ctx.quadraticCurveTo((i + 0.5) * step, H / 2 + bH[i + 1] * H * 0.36, px, py);
     }
     ctx.closePath();
   }
 
-  ctx.shadowBlur = 0; buildWave(); ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
+  ctx.shadowBlur = 0; buildWave(); ctx.fillStyle = 'rgba(255,255,255,0.09)'; ctx.fill();
   if (pX > 1) {
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, pX, H); ctx.clip();
     buildWave();
-    ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
-    ctx.shadowColor = `rgba(${r},${g},${b},0.5)`;
-    ctx.shadowBlur = 12 * devicePixelRatio; ctx.fill(); ctx.shadowBlur = 0;
+    const grad = ctx.createLinearGradient(0, 0, pX, 0);
+    grad.addColorStop(0, `rgba(${r},${g},${b},0.55)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0.95)`);
+    ctx.fillStyle = grad;
+    ctx.shadowColor = `rgba(${r},${g},${b},0.45)`;
+    ctx.shadowBlur = 7 * devicePixelRatio; ctx.fill(); ctx.shadowBlur = 0;
     ctx.restore();
   }
-  if (prog > 0.005 && prog < 0.998) {
-    ctx.beginPath(); ctx.arc(pX, H / 2, 5.5 * devicePixelRatio, 0, Math.PI * 2);
+  if (prog > 0.004 && prog < 0.998) {
+    const capW = 2.2 * devicePixelRatio, capH = H * 0.95, cy = H / 2, rx = capW / 2;
+    ctx.beginPath();
+    ctx.moveTo(pX - rx, cy - capH / 2 + rx);
+    ctx.arcTo(pX - rx, cy - capH / 2, pX, cy - capH / 2, rx);
+    ctx.arcTo(pX + rx, cy - capH / 2, pX + rx, cy - capH / 2 + rx, rx);
+    ctx.lineTo(pX + rx, cy + capH / 2 - rx);
+    ctx.arcTo(pX + rx, cy + capH / 2, pX, cy + capH / 2, rx);
+    ctx.arcTo(pX - rx, cy + capH / 2, pX - rx, cy + capH / 2 - rx, rx);
+    ctx.closePath();
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 10 * devicePixelRatio;
+    ctx.shadowColor = 'rgba(255,255,255,0.6)'; ctx.shadowBlur = 5 * devicePixelRatio;
     ctx.fill(); ctx.shadowBlur = 0;
   }
 }
@@ -308,8 +313,7 @@ requestAnimationFrame(ts => { lastTs = ts; requestAnimationFrame(draw); });
 
 function applyTrack(t, isNew = false) {
   if (!t) {
-    clearPauseTimers();
-    hiddenByPause = false;
+    clearPauseTimer();
     card.classList.remove('show', 'paused', 'compact');
     track = null; isPlaying = false; return;
   }
@@ -321,8 +325,8 @@ function applyTrack(t, isNew = false) {
   progRef   = performance.now();
 
   if (!wasPlaying && isPlaying) resumeFromPause();
-  if (wasPlaying && !isPlaying) { card.classList.add('paused'); startPauseTimers(); }
-  if (isPlaying) { card.classList.remove('paused', 'compact'); clearPauseTimers(); }
+  if (wasPlaying && !isPlaying) { card.classList.add('paused'); startPauseTimer(); }
+  if (isPlaying) { card.classList.remove('paused', 'compact'); clearPauseTimer(); }
 
   if (isNew || !track || track.id !== t.id) {
     track = t;
@@ -339,7 +343,7 @@ function applyTrack(t, isNew = false) {
     track = t;
   }
 
-  if (!hiddenByPause && !card.classList.contains('show')) {
+  if (!card.classList.contains('show')) {
     setTimeout(() => card.classList.add('show'), 50);
   }
 }

@@ -76,11 +76,12 @@ body { background:transparent; overflow:hidden; font-family:'Inter',sans-serif; 
 .sp-badge span { font-size:11px; font-weight:600; color:#fff; letter-spacing:0.03em; }
 
 .viz-wrap {
-  position:relative; height:26px; width:100%; overflow:hidden;
+  position:relative; height:18px; width:100%; overflow:hidden;
   transition:max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease;
-  max-height:26px; opacity:1;
+  max-height:18px; opacity:1;
 }
-#viz { width:100%; height:26px; display:block; }
+#viz { width:100%; height:18px; display:block; transition:opacity 0.3s ease; }
+#card.paused #viz { opacity:0.55; }
 
 #card.paused .art-img.active { filter:brightness(0.65) saturate(0.5); }
 #card.paused .track-title  { opacity:0.5; }
@@ -201,13 +202,8 @@ let isPlaying = false;
 let progress  = 0;
 let duration  = 1;
 let progRef   = 0;
-const BARS = 64;
-let bH = new Float32Array(BARS);
-let tH = new Float32Array(BARS);
-let nCur = new Float32Array(BARS).fill(0.5);
-let nTgt = new Float32Array(BARS).fill(0.5);
-let noiseClock = 0;
-let lastTs = 0;
+let visProg   = 0;
+let lastTs    = 0;
 let pauseTimer = null;
 
 function clearPauseTimer() { clearTimeout(pauseTimer); pauseTimer = null; }
@@ -225,87 +221,53 @@ function resize() { canvas.width = canvas.offsetWidth * devicePixelRatio; canvas
 resize();
 new ResizeObserver(resize).observe(canvas);
 
-function updateTargets(t, dt) {
-  noiseClock += dt;
-  if (noiseClock > 0.12) {
-    noiseClock = 0;
-    for (let i = 0; i < BARS; i++) nTgt[i] = Math.random();
-  }
-  const nk = 1 - Math.exp(-6 * dt);
-  for (let i = 0; i < BARS; i++) nCur[i] += (nTgt[i] - nCur[i]) * nk;
-
-  for (let i = 0; i < BARS; i++) {
-    const p = i / BARS;
-    if (!isPlaying) {
-      tH[i] = 0.04 + 0.03 * Math.sin(t * 0.6 + p * Math.PI * 3);
-    } else {
-      const h = 0.30 * Math.abs(Math.sin(t * 2.3 + p * Math.PI * 5))
-              + 0.25 * Math.abs(Math.sin(t * 3.8 + p * Math.PI * 8))
-              + 0.18 * Math.abs(Math.sin(t * 1.4 + p * Math.PI * 3))
-              + 0.10 * Math.abs(Math.sin(t * 6.1 + p * Math.PI * 12))
-              + 0.06 * nCur[i];
-      tH[i] = Math.max(0.04, Math.min(1, h));
-    }
-  }
-}
-
 function fmt(ms) { const s = Math.floor(ms / 1000), m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, '0')}`; }
+
+function roundedRect(x, y, w, h, rad) {
+  const rr = Math.max(0, Math.min(rad, h / 2, w / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
 
 function draw(ts) {
   requestAnimationFrame(draw);
   const dt = Math.min((ts - lastTs) / 1000, 0.05); lastTs = ts;
   if (isPlaying && progRef > 0) { progress = Math.min(duration, progress + (ts - progRef)); progRef = ts; }
   timeEl.textContent = `${fmt(progress)} / ${fmt(duration)}`;
-  updateTargets(ts / 1000, dt);
-  const rate = isPlaying ? 14 : 5;
-  const k = 1 - Math.exp(-rate * dt);
-  for (let i = 0; i < BARS; i++) bH[i] += (tH[i] - bH[i]) * k;
+
+  // Ease the displayed position toward the real one — this is what makes a
+  // track change glide back to the start instead of snapping instantly.
+  const pk = 1 - Math.exp(-9 * dt);
+  visProg += (progress - visProg) * pk;
 
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
-  const prog = duration > 0 ? progress / duration : 0, pX = prog * W, { r, g, b } = accent;
+  const { r, g, b } = accent;
+  const frac = duration > 0 ? Math.min(1, Math.max(0, visProg / duration)) : 0;
+  const barH = Math.max(2, Math.round(3 * devicePixelRatio));
+  const cy = H / 2, top = cy - barH / 2, pX = frac * W;
 
-  function buildWave() {
-    const step = W / (BARS - 1);
-    ctx.beginPath(); ctx.moveTo(0, H / 2);
-    for (let i = 0; i < BARS; i++) {
-      const px = i * step, py = H / 2 - bH[i] * H * 0.36;
-      if (i === 0) { ctx.lineTo(px, py); continue; }
-      ctx.quadraticCurveTo((i - 0.5) * step, H / 2 - bH[i - 1] * H * 0.36, px, py);
-    }
-    ctx.lineTo(W, H / 2);
-    for (let i = BARS - 1; i >= 0; i--) {
-      const px = i * step, py = H / 2 + bH[i] * H * 0.36;
-      if (i === BARS - 1) { ctx.lineTo(px, py); continue; }
-      ctx.quadraticCurveTo((i + 0.5) * step, H / 2 + bH[i + 1] * H * 0.36, px, py);
-    }
-    ctx.closePath();
-  }
+  roundedRect(0, top, W, barH, barH / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
 
-  ctx.shadowBlur = 0; buildWave(); ctx.fillStyle = 'rgba(255,255,255,0.09)'; ctx.fill();
   if (pX > 1) {
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, pX, H); ctx.clip();
-    buildWave();
+    roundedRect(0, top, pX, barH, barH / 2);
     const grad = ctx.createLinearGradient(0, 0, pX, 0);
     grad.addColorStop(0, `rgba(${r},${g},${b},0.55)`);
     grad.addColorStop(1, `rgba(${r},${g},${b},0.95)`);
-    ctx.fillStyle = grad;
-    ctx.shadowColor = `rgba(${r},${g},${b},0.45)`;
-    ctx.shadowBlur = 7 * devicePixelRatio; ctx.fill(); ctx.shadowBlur = 0;
-    ctx.restore();
+    ctx.fillStyle = grad; ctx.fill();
   }
-  if (prog > 0.004 && prog < 0.998) {
-    const capW = 2.2 * devicePixelRatio, capH = H * 0.95, cy = H / 2, rx = capW / 2;
+
+  if (frac > 0.003 && frac < 0.997) {
     ctx.beginPath();
-    ctx.moveTo(pX - rx, cy - capH / 2 + rx);
-    ctx.arcTo(pX - rx, cy - capH / 2, pX, cy - capH / 2, rx);
-    ctx.arcTo(pX + rx, cy - capH / 2, pX + rx, cy - capH / 2 + rx, rx);
-    ctx.lineTo(pX + rx, cy + capH / 2 - rx);
-    ctx.arcTo(pX + rx, cy + capH / 2, pX, cy + capH / 2, rx);
-    ctx.arcTo(pX - rx, cy + capH / 2, pX - rx, cy + capH / 2 - rx, rx);
-    ctx.closePath();
+    ctx.arc(pX, cy, 3.6 * devicePixelRatio, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(255,255,255,0.6)'; ctx.shadowBlur = 5 * devicePixelRatio;
+    ctx.shadowColor = 'rgba(255,255,255,0.55)'; ctx.shadowBlur = 5 * devicePixelRatio;
     ctx.fill(); ctx.shadowBlur = 0;
   }
 }
@@ -329,6 +291,7 @@ function applyTrack(t, isNew = false) {
   if (isPlaying) { card.classList.remove('paused', 'compact'); clearPauseTimer(); }
 
   if (isNew || !track || track.id !== t.id) {
+    if (!track) visProg = progress;
     track = t;
     setArtwork(t.albumArt);
     infoEl.classList.add('changing');

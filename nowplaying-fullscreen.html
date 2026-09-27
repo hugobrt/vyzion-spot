@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Now Playing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  background:#050505; color:#fff; font-family:'Inter',sans-serif;
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+  cursor:default;
+}
+
+/* ── Background: blurred, drifting album art ── */
+#bg { position:fixed; inset:0; overflow:hidden; z-index:0; }
+.bg-layer {
+  position:absolute; inset:-12%; background-size:cover; background-position:center;
+  filter:blur(70px) saturate(1.4) brightness(0.42);
+  transform:scale(1.15);
+  opacity:0; will-change:opacity,transform;
+  transition:opacity 1.2s cubic-bezier(0.16,1,0.3,1);
+}
+.bg-layer.active { opacity:1; animation:drift 28s ease-in-out infinite alternate; }
+@keyframes drift { to { transform:scale(1.28) rotate(1.4deg); } }
+#bg::after {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%);
+}
+
+/* ── Stage ── */
+#stage {
+  position:relative; z-index:1; height:100vh; width:100vw;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:clamp(22px,3.4vh,40px); padding:6vh 6vw; text-align:center;
+  opacity:0; transform:translateY(16px) scale(0.985);
+  transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
+}
+#stage.show { opacity:1; transform:translateY(0) scale(1); }
+
+.art-wrap { position:relative; width:min(30vw,360px); aspect-ratio:1; }
+.art-glow {
+  position:absolute; inset:-14%; border-radius:32px; z-index:-1;
+  filter:blur(50px); opacity:0; transition:opacity 1.1s cubic-bezier(0.16,1,0.3,1);
+}
+.art-glow.active { opacity:0.55; }
+.art-img {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  border-radius:20px; background:#161616;
+  box-shadow:0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  will-change:opacity,transform;
+  transition:opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1), filter 0.45s ease;
+}
+.art-img.inactive { opacity:0; transform:scale(0.94); }
+#stage.paused .art-img.active { filter:brightness(0.6) saturate(0.55); }
+
+.meta { max-width:min(72vw,760px); }
+.album-name {
+  font-size:clamp(11px,1vw,13px); letter-spacing:0.16em; text-transform:uppercase;
+  color:rgba(255,255,255,0.4); margin-bottom:12px; display:none;
+}
+.marquee-mask { overflow:hidden; }
+.marquee-inner { display:inline-flex; white-space:nowrap; }
+.marquee-inner.scroll { animation:marquee var(--mq-dur,8s) cubic-bezier(0.45,0,0.55,1) infinite; }
+@keyframes marquee {
+  0%, 12%   { transform:translateX(0); }
+  50%       { transform:translateX(var(--mq-x,0)); }
+  88%, 100% { transform:translateX(0); }
+}
+#title {
+  font-size:clamp(26px,4vw,52px); font-weight:800; letter-spacing:-0.01em; line-height:1.15;
+  margin-bottom:10px; transition:opacity 0.3s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+#artist {
+  font-size:clamp(15px,1.7vw,22px); font-weight:500; color:rgba(255,255,255,0.55);
+  transition:opacity 0.3s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+#stage.paused #title  { opacity:0.55; }
+#stage.paused #artist { opacity:0.4; }
+.meta.changing #title,
+.meta.changing #artist { opacity:0; transform:translateY(-8px); }
+
+.progress { display:flex; align-items:center; gap:14px; width:min(56vw,540px); }
+.time { font-size:12px; color:rgba(255,255,255,0.4); font-variant-numeric:tabular-nums; width:42px; flex-shrink:0; }
+.time.remain { text-align:right; }
+.bar-track { flex:1; height:16px; position:relative; }
+#bar { width:100%; height:100%; display:block; }
+
+.badge { display:flex; align-items:center; gap:7px; opacity:0.4; }
+.badge span { font-size:12px; font-weight:600; color:#fff; letter-spacing:0.03em; }
+
+/* ── Empty state ── */
+#empty {
+  position:fixed; inset:0; z-index:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:18px;
+  opacity:0; pointer-events:none; transition:opacity 0.6s ease;
+}
+#empty.show { opacity:1; }
+#empty .pulse {
+  width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.06);
+  display:flex; align-items:center; justify-content:center; animation:pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { transform:scale(1); opacity:0.7; } 50% { transform:scale(1.08); opacity:1; } }
+#empty p { color:rgba(255,255,255,0.4); font-size:14px; letter-spacing:0.02em; }
+
+/* ── Fullscreen toggle ── */
+#fsBtn {
+  position:fixed; bottom:24px; right:24px; z-index:2; width:42px; height:42px;
+  background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); border-radius:50%;
+  color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  opacity:0; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  transition:opacity 0.4s ease, background 0.2s ease;
+}
+#fsBtn.visible { opacity:0.7; }
+#fsBtn:hover { opacity:1; background:rgba(255,255,255,0.14); }
+#fsBtn svg.icon-exit { display:none; }
+#fsBtn.is-full svg.icon-enter { display:none; }
+#fsBtn.is-full svg.icon-exit { display:block; }
+
+@media (max-aspect-ratio: 4/5) {
+  .art-wrap { width:min(58vw,300px); }
+  .progress { width:min(80vw,420px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #stage, .art-img, .art-glow, .bg-layer, #title, #artist, #empty { transition-duration:0.01s !important; }
+  .bg-layer.active { animation:none !important; }
+  .marquee-inner.scroll { animation:none !important; }
+  #empty .pulse { animation:none !important; }
+}
+</style>
+</head>
+<body>
+<div id="bg">
+  <div class="bg-layer" id="bgA"></div>
+  <div class="bg-layer" id="bgB"></div>
+</div>
+
+<main id="stage">
+  <div class="art-wrap">
+    <div class="art-glow" id="glowA"></div>
+    <div class="art-glow" id="glowB"></div>
+    <img class="art-img" id="artA" src="" alt="" crossorigin="anonymous">
+    <img class="art-img" id="artB" src="" alt="" crossorigin="anonymous">
+  </div>
+  <div class="meta" id="meta">
+    <div class="album-name" id="album"></div>
+    <div class="marquee-mask" id="titleMask"><div class="marquee-inner"><span id="title">—</span></div></div>
+    <div class="marquee-mask" id="artistMask"><div class="marquee-inner"><span id="artist">—</span></div></div>
+  </div>
+  <div class="progress">
+    <span class="time" id="tElapsed">0:00</span>
+    <div class="bar-track"><canvas id="bar"></canvas></div>
+    <span class="time remain" id="tRemain">-0:00</span>
+  </div>
+  <div class="badge">
+    <svg width="15" height="15" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#1DB954" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+    <span>Spotify</span>
+  </div>
+</main>
+
+<div id="empty">
+  <div class="pulse">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM21 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+  </div>
+  <p>Aucune lecture en cours</p>
+</div>
+
+<button id="fsBtn" aria-label="Plein écran">
+  <svg class="icon-enter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+  <svg class="icon-exit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3v4a2 2 0 01-2 2H3m18 0h-4a2 2 0 01-2-2V3m0 18v-4a2 2 0 012-2h4M3 15h4a2 2 0 012 2v4"/></svg>
+</button>
+
+<script>
+const bg      = { A: document.getElementById('bgA'), B: document.getElementById('bgB') };
+const stage   = document.getElementById('stage');
+const empty   = document.getElementById('empty');
+const meta    = document.getElementById('meta');
+const albumEl = document.getElementById('album');
+const titleEl = document.getElementById('title');
+const artistEl= document.getElementById('artist');
+const titleMask  = document.getElementById('titleMask');
+const artistMask = document.getElementById('artistMask');
+const tElapsed= document.getElementById('tElapsed');
+const tRemain = document.getElementById('tRemain');
+const canvas  = document.getElementById('bar');
+const ctx     = canvas.getContext('2d');
+const fsBtn   = document.getElementById('fsBtn');
+const artA    = document.getElementById('artA');
+const artB    = document.getElementById('artB');
+const glowA   = document.getElementById('glowA');
+const glowB   = document.getElementById('glowB');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// --- Crossfading background + album art + glow (ping-ponged layer pairs) ---
+let bgFront = bg.A, bgBack = bg.B;
+let artFront = artA, artBack = artB;
+let glowFront = glowA, glowBack = glowB;
+artFront.classList.add('active');
+glowFront.classList.add('active');
+artBack.classList.add('inactive');
+
+function extractAccent(img, glowEl) {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 48;
+    const cx = c.getContext('2d'); cx.drawImage(img, 0, 0, 48, 48);
+    const d = cx.getImageData(0, 0, 48, 48).data;
+    let bestSat = 0, br = 30, bg2 = 185, bb = 84;
+    for (let i = 0; i < d.length; i += 8) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const M = Math.max(r, g, b), m = Math.min(r, g, b);
+      const sat = M === 0 ? 0 : (M - m) / M, bri = M / 255;
+      if (sat > bestSat && bri > 0.18 && bri < 0.96) { bestSat = sat; br = r; bg2 = g; bb = b; }
+    }
+    accent = { r: br, g: bg2, b: bb };
+    glowEl.style.background = `rgba(${br},${bg2},${bb},0.6)`;
+  } catch (e) {}
+}
+
+function setArtwork(url) {
+  const loader = new Image();
+  loader.crossOrigin = 'anonymous';
+  loader.onload = () => {
+    extractAccent(loader, glowBack);
+    artBack.src = url;
+    bgBack.style.backgroundImage = `url("${url}")`;
+    requestAnimationFrame(() => {
+      artFront.classList.add('inactive');
+      artBack.classList.remove('inactive');
+      glowBack.classList.add('active');
+      glowFront.classList.remove('active');
+      bgBack.classList.add('active');
+      bgFront.classList.remove('active');
+      [artFront, artBack] = [artBack, artFront];
+      [glowFront, glowBack] = [glowBack, glowFront];
+      [bgFront, bgBack] = [bgBack, bgFront];
+    });
+  };
+  loader.src = url;
+}
+
+// --- Marquee for overflowing text ---
+function refreshMarquee(mask) {
+  const inner = mask.querySelector('.marquee-inner');
+  inner.classList.remove('scroll');
+  if (reduceMotion) return;
+  requestAnimationFrame(() => {
+    const overflow = inner.scrollWidth - mask.clientWidth;
+    if (overflow > 4) {
+      const dist = overflow + 24;
+      mask.style.setProperty('--mq-x', `-${dist}px`);
+      mask.style.setProperty('--mq-dur', `${Math.max(5, dist / 30 + 3)}s`);
+      inner.classList.add('scroll');
+    }
+  });
+}
+
+// --- Progress bar ---
+let accent    = { r: 30, g: 185, b: 84 };
+let track     = null;
+let isPlaying = false;
+let progress  = 0;
+let duration  = 1;
+let progRef   = 0;
+let visProg   = 0;
+let lastTs    = 0;
+
+function resize() { canvas.width = canvas.offsetWidth * devicePixelRatio; canvas.height = canvas.offsetHeight * devicePixelRatio; }
+resize();
+new ResizeObserver(resize).observe(canvas);
+
+function fmt(ms) { const s = Math.max(0, Math.floor(ms / 1000)), m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, '0')}`; }
+
+function roundedRect(x, y, w, h, rad) {
+  const rr = Math.max(0, Math.min(rad, h / 2, w / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function draw(ts) {
+  requestAnimationFrame(draw);
+  const dt = Math.min((ts - lastTs) / 1000, 0.05); lastTs = ts;
+  if (isPlaying && progRef > 0) { progress = Math.min(duration, progress + (ts - progRef)); progRef = ts; }
+  tElapsed.textContent = fmt(progress);
+  tRemain.textContent  = '-' + fmt(duration - progress);
+
+  const pk = 1 - Math.exp(-9 * dt);
+  visProg += (progress - visProg) * pk;
+
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const { r, g, b } = accent;
+  const frac = duration > 0 ? Math.min(1, Math.max(0, visProg / duration)) : 0;
+  const barH = Math.max(3, Math.round(4 * devicePixelRatio));
+  const cy = H / 2, top = cy - barH / 2, pX = frac * W;
+
+  roundedRect(0, top, W, barH, barH / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fill();
+
+  if (pX > 1) {
+    roundedRect(0, top, pX, barH, barH / 2);
+    const grad = ctx.createLinearGradient(0, 0, pX, 0);
+    grad.addColorStop(0, `rgba(${r},${g},${b},0.55)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0.95)`);
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  if (frac > 0.003 && frac < 0.997) {
+    ctx.beginPath();
+    ctx.arc(pX, cy, 5 * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(255,255,255,0.55)'; ctx.shadowBlur = 6 * devicePixelRatio;
+    ctx.fill(); ctx.shadowBlur = 0;
+  }
+}
+requestAnimationFrame(ts => { lastTs = ts; requestAnimationFrame(draw); });
+
+function applyTrack(t) {
+  if (!t) {
+    stage.classList.remove('show');
+    track = null; isPlaying = false;
+    document.title = 'Now Playing';
+    setTimeout(() => { if (!track) empty.classList.add('show'); }, 500);
+    return;
+  }
+
+  empty.classList.remove('show');
+  isPlaying = t.isPlaying;
+  progress  = t.progress;
+  duration  = t.duration || 1;
+  progRef   = performance.now();
+  stage.classList.toggle('paused', !isPlaying);
+
+  const isNewTrack = !track || track.id !== t.id;
+  if (isNewTrack) {
+    if (!track) visProg = progress;
+    track = t;
+    setArtwork(t.albumArt);
+    meta.classList.add('changing');
+    setTimeout(() => {
+      titleEl.textContent  = t.title;
+      artistEl.textContent = t.artist;
+      albumEl.textContent  = t.album || '';
+      albumEl.style.display = t.album ? 'block' : 'none';
+      document.title = `${t.title} — ${t.artist}`;
+      meta.classList.remove('changing');
+      refreshMarquee(titleMask);
+      refreshMarquee(artistMask);
+    }, 320);
+  } else {
+    track = t;
+  }
+
+  if (!stage.classList.contains('show')) {
+    requestAnimationFrame(() => stage.classList.add('show'));
+  }
+}
+
+// --- Fullscreen toggle, auto-hiding button ---
+let fsHideTimer = null;
+function showFsBtn() {
+  fsBtn.classList.add('visible');
+  clearTimeout(fsHideTimer);
+  fsHideTimer = setTimeout(() => fsBtn.classList.remove('visible'), 3000);
+}
+window.addEventListener('mousemove', showFsBtn);
+showFsBtn();
+fsBtn.addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+});
+document.addEventListener('fullscreenchange', () => {
+  fsBtn.classList.toggle('is-full', !!document.fullscreenElement);
+});
+
+// --- WebSocket (shared feed — filter to track-relevant messages only) ---
+let ws, wsRetry = 0;
+function connect() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${protocol}//${location.host}`);
+  ws.onopen = () => { wsRetry = 0; };
+  ws.onclose = () => { const delay = Math.min(10000, 800 * Math.pow(1.5, wsRetry++)); setTimeout(connect, delay); };
+  ws.onerror = () => {};
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (['init', 'newtrack', 'progress', 'track'].includes(m.type)) applyTrack(m.track);
+  };
+}
+connect();
+</script>
+</body>
+</html>

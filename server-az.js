@@ -473,6 +473,7 @@ else if (pathname === '/pbl') { fp = path.join(__dirname, 'planning_public.html'
 else if (pathname === '/stats') { fp = path.join(__dirname, 'twitch_stats.html'); }
 else if (pathname === '/planning') { fp = path.join(__dirname, 'planning_stream.html'); }
 else if (pathname === '/rapport') { fp = path.join(__dirname, 'rapport.html'); }
+else if (pathname === '/spoti-full') { fp = path.join(__dirname, 'nowplaying-fullscreen.html'); }
 else { fp = path.join(__dirname, pathname); }
 
 const ext = path.extname(fp);
